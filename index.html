@@ -2,9 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>개미들의 달콤한 왕국 v4.1</title>
+    <title>개미들의 달콤한 왕국 v5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
@@ -113,39 +112,39 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            background: linear-gradient(135deg, #FF6B6B 0%, #FF5252 100%);
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF4757 100%);
             color: white;
             padding: 20px 40px;
-            border-radius: 50px;
+            border-radius: 40px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 25;
             font-size: 2rem;
             font-weight: bold;
-            z-index: 25;
+            text-align: center;
             border: 4px solid white;
-            box-shadow: 0 10px 30px rgba(255,0,0,0.4);
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        .threat-warning.show {
-            transform: translate(-50%, -50%) scale(1);
+            box-shadow: 0 10px 30px rgba(255,71,87,0.5);
         }
     </style>
 </head>
 <body>
 
     <canvas id="gameCanvas"></canvas>
-    <div class="weather-indicator" id="weatherIcon">&#9728;</div>
-    <div class="threat-warning" id="threatWarning">&#9888; 위험!</div>
+    <div class="weather-indicator" id="weatherIcon">☀️</div>
 
     <div class="ui-layer">
         <!-- 상단 HUD -->
         <div class="flex justify-between w-full pointer-events-none">
             <div class="hud-panel">
-                <span class="text-3xl">&#127852;</span>
+                <span class="text-3xl">🍬</span>
                 <span id="scoreDisplay" class="text-2xl font-bold" style="color: #FF69B4;">0</span>
             </div>
             <div class="hud-panel">
-                <span class="text-2xl">&#128028;</span>
+                <span class="text-2xl">🐜</span>
                 <span id="antCountDisplay" class="text-xl font-bold ml-2" style="color: #FF69B4;">5</span>
+                <span class="text-lg ml-2" style="color: #DC143C;">💪<span id="soldierCount">0</span></span>
             </div>
         </div>
 
@@ -158,43 +157,17 @@
     </div>
 
     <div id="toast" class="toast">하늘을 터치해서 간식을 주세요!</div>
+    <div id="threatWarning" class="threat-warning">⚠️ 위험!</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
+        // 이모지 렌더링 개선을 위한 설정
+        ctx.textRendering = 'optimizeLegibility';
+        
         // --- 상수 및 설정 ---
         const TREATS = ['🍬', '🍭', '🍫', '🍩', '🍪', '🧁', '🍰', '🥨', '🥐', '🥯', '🧇', '🥞', '🌭', '🍟', '🍕'];
-        
-        const THREAT_TYPES = [
-            { 
-                name: '개미핥기', 
-                emoji: '🦔', 
-                damage: 30, 
-                stunTime: 120, 
-                foodLoss: 2,
-                speed: 1.5,
-                size: 60
-            },
-            { 
-                name: '거미', 
-                emoji: '🕷️', 
-                damage: 20, 
-                stunTime: 80, 
-                foodLoss: 1,
-                speed: 2.0,
-                size: 40
-            },
-            { 
-                name: '비둘기', 
-                emoji: '🐦', 
-                damage: 25, 
-                stunTime: 100, 
-                foodLoss: 3,
-                speed: 2.5,
-                size: 50
-            }
-        ];
         
         // --- 게임 상태 (State) ---
         const state = {
@@ -203,6 +176,7 @@
             foods: [],
             particles: [],
             weatherParticles: [],
+            threats: [], // 위협 객체들
             lastTime: 0,
             groundY: 0,
             nestEntrance: { x: 0, y: 0 },
@@ -217,18 +191,18 @@
             targetSkyColor: { r: 176, g: 224, b: 230 },
             
             // 위협 시스템
-            threat: null,
             threatTimer: 0,
             threatInterval: 20, // 20초마다 위협 체크
-            isUnderAttack: false
+            lastThreatTime: 0
         };
 
         const scoreEl = document.getElementById('scoreDisplay');
         const antCountEl = document.getElementById('antCountDisplay');
+        const soldierCountEl = document.getElementById('soldierCount');
         const buyBtn = document.getElementById('buyAntBtn');
         const toast = document.getElementById('toast');
-        const weatherIcon = document.getElementById('weatherIcon');
         const threatWarning = document.getElementById('threatWarning');
+        const weatherIcon = document.getElementById('weatherIcon');
 
         // --- 오디오 ---
         let audioCtx = null;
@@ -260,7 +234,7 @@
                 osc.frequency.linearRampToValueAtTime(900, now + 0.25);
                 gain.gain.setValueAtTime(0.12, now);
                 gain.gain.linearRampToValueAtTime(0, now + 0.35);
-            } else if (type === 'danger') {
+            } else if (type === 'threat') {
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(200, now);
                 osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
@@ -269,7 +243,7 @@
             } else if (type === 'defend') {
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(400, now);
-                osc.frequency.linearRampToValueAtTime(600, now + 0.15);
+                osc.frequency.linearRampToValueAtTime(600, now + 0.1);
                 gain.gain.setValueAtTime(0.1, now);
                 gain.gain.linearRampToValueAtTime(0, now + 0.15);
             }
@@ -379,6 +353,108 @@
             }
         }
 
+        class Threat {
+            constructor(type) {
+                this.type = type; // 'ANTEATER', 'SPIDER', 'BIRD'
+                this.x = canvas.width + 100;
+                this.y = state.groundY - 50;
+                this.vx = -2;
+                this.state = 'APPROACHING';
+                this.attackTimer = 0;
+                this.attackDuration = 3000; // 3초간 공격
+                this.defended = false;
+                this.hp = type === 'BIRD' ? 1 : (type === 'SPIDER' ? 2 : 3);
+                this.maxHp = this.hp;
+                this.size = type === 'BIRD' ? 60 : (type === 'SPIDER' ? 40 : 70);
+                this.wiggle = 0;
+            }
+            
+            update(dt) {
+                this.wiggle += 0.1;
+                
+                if (this.state === 'APPROACHING') {
+                    this.x += this.vx;
+                    
+                    // 비둘기는 위아래로 움직임
+                    if (this.type === 'BIRD') {
+                        this.y = state.groundY - 50 + Math.sin(this.wiggle) * 20;
+                    }
+                    
+                    if (this.x < canvas.width / 2) {
+                        this.state = 'ATTACKING';
+                        this.vx = 0;
+                        playSound('threat');
+                        showThreatWarning(`${this.getEmoji()} 위험!`);
+                    }
+                } else if (this.state === 'ATTACKING') {
+                    this.attackTimer += dt;
+                    
+                    // 공격 중 흔들림
+                    this.x += Math.sin(this.wiggle * 2) * 2;
+                    
+                    if (this.attackTimer >= this.attackDuration) {
+                        return false; // 공격 끝나면 제거
+                    }
+                } else if (this.state === 'RETREATING') {
+                    this.x += 5; // 빠르게 도망
+                    if (this.x > canvas.width + 100) return false;
+                }
+                
+                return true;
+            }
+            
+            getEmoji() {
+                if (this.type === 'ANTEATER') return '🦡';
+                if (this.type === 'SPIDER') return '🕷️';
+                if (this.type === 'BIRD') return '🐦';
+                return '👾';
+            }
+            
+            takeDamage() {
+                this.hp--;
+                playSound('defend');
+                
+                // 피격 파티클
+                for(let i=0; i<5; i++) {
+                    state.particles.push(new Particle(this.x, this.y, '#FF6B6B'));
+                }
+                
+                if (this.hp <= 0) {
+                    this.state = 'RETREATING';
+                    this.defended = true;
+                    showToast('병정개미가 적을 쫓아냈어요! 💪');
+                }
+            }
+            
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // HP 바
+                if (this.state === 'ATTACKING' && this.hp < this.maxHp) {
+                    const barWidth = 50;
+                    const barHeight = 5;
+                    ctx.fillStyle = '#FF6B6B';
+                    ctx.fillRect(-barWidth/2, -this.size/2 - 15, barWidth, barHeight);
+                    ctx.fillStyle = '#4CAF50';
+                    ctx.fillRect(-barWidth/2, -this.size/2 - 15, barWidth * (this.hp / this.maxHp), barHeight);
+                }
+                
+                // 위협 그리기
+                ctx.font = `${this.size}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // 그림자 효과
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(255,0,0,0.5)';
+                
+                ctx.fillText(this.getEmoji(), 0, 0);
+                
+                ctx.restore();
+            }
+        }
+
         class Food {
             constructor(x, y) {
                 this.x = x; 
@@ -435,149 +511,12 @@
                     ctx.shadowBlur = 10;
                     ctx.shadowColor = 'rgba(0,0,0,0.2)';
                 }
-                ctx.font = "36px Arial"; 
+                
+                // 이모지 렌더링 최적화
+                ctx.font = "36px Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'";
                 ctx.textAlign = "center"; 
                 ctx.textBaseline = "middle";
                 ctx.fillText(this.type, 0, 0); 
-                ctx.restore();
-            }
-        }
-
-        class Threat {
-            constructor(type) {
-                this.type = type;
-                this.x = -type.size;
-                this.y = state.groundY - type.size/2;
-                this.targetX = canvas.width / 2;
-                this.speed = type.speed;
-                this.state = 'APPROACHING';
-                this.wiggle = 0;
-                this.attackTimer = 0;
-                this.attackDuration = 180; // 3초
-                this.health = 100;
-            }
-            
-            update() {
-                this.wiggle += 0.1;
-                
-                if (this.state === 'APPROACHING') {
-                    const dx = this.targetX - this.x;
-                    if (Math.abs(dx) > 5) {
-                        this.x += Math.sign(dx) * this.speed;
-                    } else {
-                        this.state = 'ATTACKING';
-                        this.attackTimer = 0;
-                        state.isUnderAttack = true;
-                    }
-                } else if (this.state === 'ATTACKING') {
-                    this.attackTimer++;
-                    
-                    // 병정개미 방어 체크
-                    const soldiers = state.ants.filter(a => a.type === 'SOLDIER' && !a.isStunned);
-                    if (soldiers.length > 0 && this.attackTimer % 30 === 0) {
-                        this.health -= 20 * soldiers.length;
-                        playSound('defend');
-                        
-                        // 방어 파티클
-                        for(let i=0; i<5; i++) {
-                            state.particles.push(new Particle(this.x, this.y, '#FF6B6B'));
-                        }
-                        
-                        if (this.health <= 0) {
-                            this.state = 'FLEEING';
-                            showToast('병정개미가 위협을 물리쳤어요! 💪');
-                            return;
-                        }
-                    }
-                    
-                    if (this.attackTimer >= this.attackDuration) {
-                        this.performAttack();
-                        this.state = 'FLEEING';
-                    }
-                } else if (this.state === 'FLEEING') {
-                    this.x += this.speed * 2;
-                    if (this.x > canvas.width + 100) {
-                        return false; // 제거
-                    }
-                }
-                return true;
-            }
-            
-            performAttack() {
-                const soldiers = state.ants.filter(a => a.type === 'SOLDIER' && !a.isStunned);
-                let damageReduction = Math.min(0.7, soldiers.length * 0.2); // 최대 70% 감소
-                
-                const actualDamage = Math.floor(this.type.damage * (1 - damageReduction));
-                const actualFoodLoss = Math.max(0, this.type.foodLoss - soldiers.length);
-                const actualStunTime = Math.floor(this.type.stunTime * (1 - damageReduction));
-                
-                // 점수 감소
-                state.score = Math.max(0, state.score - actualDamage);
-                
-                // 음식 파괴
-                const groundFoods = state.foods.filter(f => f.state === 'GROUND');
-                for(let i = 0; i < actualFoodLoss && groundFoods.length > 0; i++) {
-                    const food = groundFoods[i];
-                    state.foods = state.foods.filter(f => f !== food);
-                    // 음식 파괴 파티클
-                    for(let j=0; j<10; j++) {
-                        state.particles.push(new Particle(food.x, food.y, '#FF6B6B'));
-                    }
-                }
-                
-                // 개미 스턴
-                state.ants.forEach(ant => {
-                    ant.isStunned = true;
-                    ant.stunTimer = actualStunTime;
-                });
-                
-                playSound('danger');
-                
-                if (soldiers.length > 0) {
-                    showToast(`병정개미가 피해를 줄였어요! (-${actualDamage}점)`);
-                } else {
-                    showToast(`${this.type.name} 공격! 큰 피해를 입었어요! (-${actualDamage}점)`);
-                }
-                
-                state.isUnderAttack = false;
-                updateUI();
-            }
-            
-            draw(ctx) {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                
-                // 위협적인 흔들림
-                if (this.state === 'ATTACKING') {
-                    ctx.rotate(Math.sin(this.wiggle * 3) * 0.2);
-                }
-                
-                // 그림자
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = 'rgba(255,0,0,0.4)';
-                
-                ctx.font = `${this.type.size}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(this.type.emoji, 0, 0);
-                
-                // 체력바 (공격 중일 때만)
-                if (this.state === 'ATTACKING') {
-                    const barWidth = 60;
-                    const barHeight = 8;
-                    ctx.shadowBlur = 0;
-                    
-                    ctx.fillStyle = '#FF6B6B';
-                    ctx.fillRect(-barWidth/2, -this.type.size/2 - 15, barWidth, barHeight);
-                    
-                    ctx.fillStyle = '#4CAF50';
-                    ctx.fillRect(-barWidth/2, -this.type.size/2 - 15, barWidth * (this.health/100), barHeight);
-                    
-                    ctx.strokeStyle = 'white';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(-barWidth/2, -this.type.size/2 - 15, barWidth, barHeight);
-                }
-                
                 ctx.restore();
             }
         }
@@ -615,18 +554,18 @@
                 this.wiggle = Math.random() * 10;
                 this.holdingFood = null;
                 this.angle = 0;
-                this.isStunned = false;
-                this.stunTimer = 0;
+                this.stunTimer = 0; // 스턴 상태
+                this.defendCooldown = 0; // 방어 쿨다운
                 
                 this.setRandomPatrolTarget();
             }
 
             setRandomPatrolTarget() {
-                // 병정개미는 위협이 있을 때 입구 근처로
-                if (this.type === 'SOLDIER' && state.isUnderAttack) {
+                // 병정개미는 입구 근처를 더 자주 순찰
+                if (this.type === 'SOLDIER' && Math.random() < 0.7) {
                     this.targetPos = { 
-                        x: state.nestEntrance.x + (Math.random()-0.5)*60, 
-                        y: state.nestEntrance.y - 20 
+                        x: state.nestEntrance.x + (Math.random()-0.5)*80, 
+                        y: state.nestEntrance.y + 10 
                     };
                 } else if (Math.random() < 0.3 || this.type === 'SCOUT') {
                     this.targetPos = { 
@@ -644,7 +583,7 @@
             }
 
             getCurrentSpeed() {
-                if (this.isStunned) return 0;
+                if (this.stunTimer > 0) return 0;
                 return state.weather === 'RAINY' && this.y < state.groundY 
                     ? this.baseSpeed * 0.5 
                     : this.baseSpeed;
@@ -652,8 +591,6 @@
 
             moveTowards(x, y) {
                 const speed = this.getCurrentSpeed();
-                if (speed === 0) return false;
-                
                 const dx = x - this.x;
                 const dy = y - this.y;
                 const dist = Math.hypot(dx, dy);
@@ -674,14 +611,38 @@
                 this.wiggle += 0.5;
                 
                 // 스턴 처리
-                if (this.isStunned) {
+                if (this.stunTimer > 0) {
                     this.stunTimer--;
-                    if (this.stunTimer <= 0) {
-                        this.isStunned = false;
-                        this.state = 'IDLE';
-                        this.setRandomPatrolTarget();
+                    if (this.stunTimer % 10 === 0) {
+                        state.particles.push(new Particle(this.x, this.y - 10, '#FFA500'));
                     }
                     return;
+                }
+                
+                // 방어 쿨다운
+                if (this.defendCooldown > 0) this.defendCooldown--;
+
+                // 병정개미 방어 행동
+                if (this.type === 'SOLDIER' && this.defendCooldown === 0) {
+                    const nearThreat = state.threats.find(t => 
+                        t.state === 'ATTACKING' && 
+                        Math.hypot(t.x - this.x, t.y - this.y) < 150
+                    );
+                    
+                    if (nearThreat && !nearThreat.defended) {
+                        // 위협 공격
+                        nearThreat.takeDamage();
+                        this.defendCooldown = 60; // 1초 쿨다운
+                        
+                        // 공격 파티클
+                        for(let i=0; i<3; i++) {
+                            state.particles.push(new Particle(
+                                this.x + (Math.random()-0.5)*20, 
+                                this.y, 
+                                '#FFD700'
+                            ));
+                        }
+                    }
                 }
 
                 if (this.state === 'IDLE') {
@@ -756,13 +717,11 @@
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 
-                // 스턴 효과
-                if (this.isStunned) {
-                    ctx.globalAlpha = 0.5 + Math.sin(Date.now() * 0.02) * 0.3;
-                    // 별 돌아가는 효과
-                    const starAngle = (Date.now() * 0.01) % (Math.PI * 2);
-                    ctx.font = '16px Arial';
-                    ctx.fillText('✨', Math.cos(starAngle) * 15, Math.sin(starAngle) * 15 - 20);
+                // 스턴 이펙트
+                if (this.stunTimer > 0) {
+                    ctx.font = "20px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText("💫", 0, -25);
                 }
                 
                 if (Math.abs(this.angle) > Math.PI/2) ctx.scale(-1, 1);
@@ -771,7 +730,7 @@
                 ctx.strokeStyle = this.color;
                 ctx.lineWidth = 2.5;
                 ctx.lineCap = 'round';
-                const legWiggle = this.isStunned ? 0 : Math.sin(this.wiggle) * 4;
+                const legWiggle = Math.sin(this.wiggle) * 4;
                 ctx.beginPath();
                 ctx.moveTo(3, 2); ctx.lineTo(7 + legWiggle, 8);
                 ctx.moveTo(-3, 2); ctx.lineTo(-7 - legWiggle, 8);
@@ -840,40 +799,63 @@
             }
         }
 
-        // --- 시스템 함수 ---
-
-        function updateThreatSystem(dt) {
-            state.threatTimer += dt / 1000;
+        // --- 위협 시스템 ---
+        function spawnThreat() {
+            const soldierCount = state.ants.filter(a => a.type === 'SOLDIER').length;
             
-            // 위협 생성 체크
-            if (!state.threat && state.threatTimer > state.threatInterval) {
-                state.threatTimer = 0;
-                
-                const soldiers = state.ants.filter(a => a.type === 'SOLDIER').length;
-                let threatChance = 0.4 - (soldiers * 0.08); // 병정개미당 8% 감소
-                threatChance = Math.max(0.1, threatChance); // 최소 10%
-                
-                if (Math.random() < threatChance) {
-                    const threatType = THREAT_TYPES[Math.floor(Math.random() * THREAT_TYPES.length)];
-                    state.threat = new Threat(threatType);
-                    
-                    // 경고 표시
-                    threatWarning.innerText = `⚠️ ${threatType.name} 출현!`;
-                    threatWarning.classList.add('show');
-                    setTimeout(() => threatWarning.classList.remove('show'), 2000);
-                    
-                    playSound('danger');
-                }
-            }
+            // 병정개미가 많으면 위협 확률 감소
+            const threatChance = Math.max(0.3, 0.7 - (soldierCount * 0.1));
             
-            // 위협 업데이트
-            if (state.threat) {
-                if (!state.threat.update()) {
-                    state.threat = null;
-                    state.isUnderAttack = false;
-                }
-            }
+            if (Math.random() > threatChance) return;
+            
+            const types = ['ANTEATER', 'SPIDER', 'BIRD'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            state.threats.push(new Threat(type));
         }
+
+        function handleThreatDamage(threat) {
+            if (threat.defended) return; // 이미 방어됨
+            
+            const soldierCount = state.ants.filter(a => a.type === 'SOLDIER').length;
+            
+            // 병정개미가 있으면 피해 감소
+            const damageReduction = Math.min(0.7, soldierCount * 0.2);
+            
+            // 음식 피해
+            const groundFoods = state.foods.filter(f => f.state === 'GROUND');
+            if (groundFoods.length > 0 && Math.random() > damageReduction) {
+                const stolen = groundFoods[Math.floor(Math.random() * groundFoods.length)];
+                state.foods = state.foods.filter(f => f !== stolen);
+                
+                // 피해 파티클
+                for(let i=0; i<10; i++) {
+                    state.particles.push(new Particle(stolen.x, stolen.y, '#FF6B6B'));
+                }
+            }
+            
+            // 점수 피해 (병정개미가 있으면 감소)
+            const scoreLoss = Math.floor(10 * (1 - damageReduction));
+            state.score = Math.max(0, state.score - scoreLoss);
+            
+            // 개미 스턴 (병정개미 제외)
+            const stunDuration = Math.floor(120 * (1 - damageReduction));
+            state.ants.forEach(ant => {
+                if (ant.type !== 'SOLDIER' && Math.random() < 0.3) {
+                    ant.stunTimer = stunDuration;
+                }
+            });
+            
+            updateUI();
+        }
+
+        function showThreatWarning(msg) {
+            threatWarning.innerText = msg;
+            threatWarning.style.opacity = 1;
+            setTimeout(() => { threatWarning.style.opacity = 0; }, 2000);
+        }
+
+        // --- 시스템 함수 ---
 
         function updateWeather(dt) {
             state.weatherTimer += dt / 1000;
@@ -902,14 +884,14 @@
                 state.weatherParticles = [];
                 if (state.weather === 'RAINY') {
                     for(let i=0; i<50; i++) state.weatherParticles.push(new WeatherParticle('RAINY'));
-                    weatherIcon.innerHTML = state.isNight ? '&#127783;' : '&#127783;';
+                    weatherIcon.innerText = state.isNight ? '🌧️' : '🌧️';
                 } else if (state.weather === 'SNOWY') {
                     for(let i=0; i<40; i++) state.weatherParticles.push(new WeatherParticle('SNOWY'));
-                    weatherIcon.innerHTML = '&#10052;';
+                    weatherIcon.innerText = '❄️';
                 } else if (state.weather === 'CLOUDY') {
-                    weatherIcon.innerHTML = '&#9729;';
+                    weatherIcon.innerText = '☁️';
                 } else {
-                    weatherIcon.innerHTML = state.isNight ? '&#127769;' : '&#9728;';
+                    weatherIcon.innerText = state.isNight ? '🌙' : '☀️';
                 }
                 
                 if (state.isNight && state.weather === 'SUNNY') {
@@ -920,6 +902,13 @@
             state.skyColor.r += (state.targetSkyColor.r - state.skyColor.r) * speed;
             state.skyColor.g += (state.targetSkyColor.g - state.skyColor.g) * speed;
             state.skyColor.b += (state.targetSkyColor.b - state.skyColor.b) * speed;
+            
+            // 위협 시스템 업데이트
+            state.threatTimer += dt / 1000;
+            if (state.threatTimer > state.threatInterval) {
+                state.threatTimer = 0;
+                spawnThreat();
+            }
         }
 
         function resize() {
@@ -991,7 +980,7 @@
             ctx.restore();
             
             const q = state.rooms[state.rooms.length-1];
-            ctx.font = "50px Arial"; 
+            ctx.font = "50px Arial, 'Apple Color Emoji'"; 
             ctx.textAlign = "center";
             ctx.shadowBlur = 10;
             ctx.shadowColor = 'rgba(255,215,0,0.5)';
@@ -1012,15 +1001,9 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             updateWeather(dt);
-            updateThreatSystem(dt);
             drawEnvironment();
             
             state.weatherParticles.forEach(p => { p.update(); p.draw(ctx); });
-            
-            // 위협 그리기
-            if (state.threat) {
-                state.threat.draw(ctx);
-            }
             
             state.foods = state.foods.filter(f => {
                 const alive = f.update(dt);
@@ -1032,6 +1015,21 @@
                     }
                 }
                 f.draw(ctx);
+                return alive;
+            });
+            
+            // 위협 업데이트
+            state.threats = state.threats.filter(threat => {
+                const alive = threat.update(dt);
+                
+                // 공격 중일 때 주기적으로 피해
+                if (threat.state === 'ATTACKING' && !threat.defended) {
+                    if (Math.floor(threat.attackTimer) % 1000 < 20) {
+                        handleThreatDamage(threat);
+                    }
+                }
+                
+                threat.draw(ctx);
                 return alive;
             });
             
@@ -1049,16 +1047,14 @@
         function updateUI() {
             scoreEl.innerText = Math.floor(state.score);
             antCountEl.innerText = state.ants.length;
-            
-            const soldiers = state.ants.filter(a => a.type === 'SOLDIER').length;
-            const soldierInfo = soldiers > 0 ? ` 🛡️×${soldiers}` : '';
+            soldierCountEl.innerText = state.ants.filter(a => a.type === 'SOLDIER').length;
             
             if (state.score >= 50) {
                 buyBtn.disabled = false; 
-                buyBtn.innerHTML = `&#128028; 새 개미 부화하기${soldierInfo} (사탕 50개)`;
+                buyBtn.innerText = "🐜 새 개미 부화하기 (사탕 50개)";
             } else {
                 buyBtn.disabled = true; 
-                buyBtn.innerHTML = `사탕 모으는 중...${soldierInfo} (${Math.floor(state.score)}/50)`;
+                buyBtn.innerText = `사탕 모으는 중... (${Math.floor(state.score)}/50)`;
             }
         }
 
