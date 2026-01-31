@@ -1,1128 +1,1339 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>개미들의 달콤한 왕국 v5</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
-        
-        body {
-            font-family: 'Gaegu', cursive;
-            overflow: hidden;
-            touch-action: none;
-            background-color: #FFE5D9;
-            margin: 0;
-            padding: 0;
-        }
-        canvas {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-        .ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-        .hud-panel {
-            background: linear-gradient(135deg, #FFF8E7 0%, #FFF 100%);
-            border-radius: 2rem;
-            padding: 0.8rem 1.5rem;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-            pointer-events: auto;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 3px solid #FFB6C1;
-        }
-        .btn-container {
-            pointer-events: auto;
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        .btn {
-            background: linear-gradient(135deg, #FFB6C1 0%, #FF9DC7 100%);
-            color: white;
-            border: none;
-            padding: 1.2rem 2.5rem;
-            border-radius: 3rem;
-            font-size: 1.3rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 6px 0 #FF8FAB, 0 8px 20px rgba(255,182,193,0.4);
-            text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
-            border: 3px solid white;
-        }
-        .btn:active {
-            transform: translateY(6px);
-            box-shadow: 0 0 0 #FF8FAB, 0 2px 10px rgba(255,182,193,0.4);
-        }
-        .btn:disabled {
-            background: linear-gradient(135deg, #E0E0E0 0%, #CFCFCF 100%);
-            box-shadow: 0 6px 0 #B0B0B0, 0 8px 20px rgba(0,0,0,0.1);
-            cursor: not-allowed;
-            color: #999;
-        }
-        .toast {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #FFD4E5 0%, #FFC1D9 100%);
-            color: #FF1493;
-            padding: 16px 32px;
-            border-radius: 40px;
-            opacity: 0;
-            transition: opacity 0.5s;
-            pointer-events: none;
-            z-index: 20;
-            font-size: 1.3rem;
-            font-weight: bold;
-            text-align: center;
-            width: 80%;
-            border: 3px solid white;
-            box-shadow: 0 8px 25px rgba(255,105,180,0.3);
-        }
-        .weather-indicator {
-            position: absolute;
-            top: 70px;
-            right: 20px;
-            font-size: 3rem;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            z-index: 5;
-            transition: all 1s;
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.5));
-        }
-        .threat-warning {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #FF6B6B 0%, #FF4757 100%);
-            color: white;
-            padding: 20px 40px;
-            border-radius: 40px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            z-index: 25;
-            font-size: 2rem;
-            font-weight: bold;
-            text-align: center;
-            border: 4px solid white;
-            box-shadow: 0 10px 30px rgba(255,71,87,0.5);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>개미들의 달콤한 왕국 v5 (C-전투)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
+
+    body {
+      font-family: 'Gaegu', cursive;
+      overflow: hidden;
+      touch-action: none;
+      background-color: #FFE5D9;
+      margin: 0;
+      padding: 0;
+    }
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    .ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1rem;
+      box-sizing: border-box;
+    }
+    .hud-panel {
+      background: linear-gradient(135deg, #FFF8E7 0%, #FFF 100%);
+      border-radius: 2rem;
+      padding: 0.8rem 1.5rem;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 3px solid #FFB6C1;
+    }
+    .btn-container {
+      pointer-events: auto;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .btn {
+      background: linear-gradient(135deg, #FFB6C1 0%, #FF9DC7 100%);
+      color: white;
+      border: none;
+      padding: 1.2rem 2.5rem;
+      border-radius: 3rem;
+      font-size: 1.3rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 6px 0 #FF8FAB, 0 8px 20px rgba(255,182,193,0.4);
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
+      border: 3px solid white;
+    }
+    .btn:active {
+      transform: translateY(6px);
+      box-shadow: 0 0 0 #FF8FAB, 0 2px 10px rgba(255,182,193,0.4);
+    }
+    .btn:disabled {
+      background: linear-gradient(135deg, #E0E0E0 0%, #CFCFCF 100%);
+      box-shadow: 0 6px 0 #B0B0B0, 0 8px 20px rgba(0,0,0,0.1);
+      cursor: not-allowed;
+      color: #999;
+    }
+    .toast {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #FFD4E5 0%, #FFC1D9 100%);
+      color: #FF1493;
+      padding: 16px 32px;
+      border-radius: 40px;
+      opacity: 0;
+      transition: opacity 0.5s;
+      pointer-events: none;
+      z-index: 20;
+      font-size: 1.3rem;
+      font-weight: bold;
+      text-align: center;
+      width: 80%;
+      border: 3px solid white;
+      box-shadow: 0 8px 25px rgba(255,105,180,0.3);
+    }
+    .weather-indicator {
+      position: absolute;
+      top: 70px;
+      right: 20px;
+      font-size: 3rem;
+      text-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      z-index: 5;
+      transition: all 1s;
+      filter: drop-shadow(0 0 10px rgba(255,255,255,0.5));
+    }
+    .threat-warning {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #FF6B6B 0%, #FF4757 100%);
+      color: white;
+      padding: 20px 40px;
+      border-radius: 40px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 25;
+      font-size: 2rem;
+      font-weight: bold;
+      text-align: center;
+      border: 4px solid white;
+      box-shadow: 0 10px 30px rgba(255,71,87,0.5);
+    }
+  </style>
 </head>
 <body>
 
-    <canvas id="gameCanvas"></canvas>
-    <div class="weather-indicator" id="weatherIcon">☀️</div>
+<canvas id="gameCanvas"></canvas>
+<div class="weather-indicator" id="weatherIcon">☀️</div>
 
-    <div class="ui-layer">
-        <!-- 상단 HUD -->
-        <div class="flex justify-between w-full pointer-events-none">
-            <div class="hud-panel">
-                <span class="text-3xl">🍬</span>
-                <span id="scoreDisplay" class="text-2xl font-bold" style="color: #FF69B4;">0</span>
-            </div>
-            <div class="hud-panel">
-                <span class="text-2xl">🐜</span>
-                <span id="antCountDisplay" class="text-xl font-bold ml-2" style="color: #FF69B4;">5</span>
-                <span class="text-lg ml-2" style="color: #DC143C;">💪<span id="soldierCount">0</span></span>
-            </div>
-        </div>
-
-        <!-- 하단 버튼 -->
-        <div class="btn-container">
-            <button id="buyAntBtn" class="btn" disabled>
-                사탕 50개 모으는 중...
-            </button>
-        </div>
+<div class="ui-layer">
+  <div class="flex justify-between w-full pointer-events-none">
+    <div class="hud-panel">
+      <span class="text-3xl">🍬</span>
+      <span id="scoreDisplay" class="text-2xl font-bold" style="color: #FF69B4;">0</span>
     </div>
+    <div class="hud-panel">
+      <span class="text-2xl">🐜</span>
+      <span id="antCountDisplay" class="text-xl font-bold ml-2" style="color: #FF69B4;">5</span>
+      <span class="text-lg ml-2" style="color: #DC143C;">💪<span id="soldierCount">0</span></span>
+    </div>
+  </div>
 
-    <div id="toast" class="toast">하늘을 터치해서 간식을 주세요!</div>
-    <div id="threatWarning" class="threat-warning">⚠️ 위험!</div>
+  <div class="btn-container">
+    <button id="buyAntBtn" class="btn" disabled>
+      사탕 50개 모으는 중...
+    </button>
+  </div>
+</div>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // 이모지 렌더링 개선을 위한 설정
-        ctx.textRendering = 'optimizeLegibility';
-        
-        // --- 상수 및 설정 ---
-        const TREATS = ['🍬', '🍭', '🍫', '🍩', '🍪', '🧁', '🍰', '🥨', '🥐', '🥯', '🧇', '🥞', '🌭', '🍟', '🍕'];
-        
-        // --- 게임 상태 (State) ---
-        const state = {
-            score: 0,
-            ants: [],
-            foods: [],
-            particles: [],
-            weatherParticles: [],
-            threats: [], // 위협 객체들
-            lastTime: 0,
-            groundY: 0,
-            nestEntrance: { x: 0, y: 0 },
-            rooms: [],
-            
-            // 날씨 & 시간 시스템
-            isNight: false,
-            weather: 'SUNNY', 
-            weatherTimer: 0,
-            weatherDuration: 30,
-            skyColor: { r: 176, g: 224, b: 230 },
-            targetSkyColor: { r: 176, g: 224, b: 230 },
-            
-            // 위협 시스템
-            threatTimer: 0,
-            threatInterval: 20, // 20초마다 위협 체크
-            lastThreatTime: 0
-        };
+<div id="toast" class="toast">하늘을 터치해서 간식을 주세요!</div>
+<div id="threatWarning" class="threat-warning">⚠️ 위험!</div>
 
-        const scoreEl = document.getElementById('scoreDisplay');
-        const antCountEl = document.getElementById('antCountDisplay');
-        const soldierCountEl = document.getElementById('soldierCount');
-        const buyBtn = document.getElementById('buyAntBtn');
-        const toast = document.getElementById('toast');
-        const threatWarning = document.getElementById('threatWarning');
-        const weatherIcon = document.getElementById('weatherIcon');
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
 
-        // --- 오디오 ---
-        let audioCtx = null;
-        function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // --- iOS/Safari 캔버스 이모지 컬러/틴트 이슈 대응 ---
+  const EMOJI_FONT_STACK = `'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif`;
+  function drawEmoji(ctx, emoji, x, y, sizePx, options = {}) {
+    const {
+      shadowBlur = 0,
+      shadowColor = 'transparent',
+      alpha = 1,
+      fillStyle = '#000',
+      rotate = 0,
+      scale = 1
+    } = options;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    if (rotate) ctx.rotate(rotate);
+    if (scale !== 1) ctx.scale(scale, scale);
+
+    ctx.font = `${sizePx}px ${EMOJI_FONT_STACK}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 중요: iOS에서 단색 글리프로 떨어질 때 fillStyle 색으로 칠해짐(초록 상속 방지)
+    ctx.fillStyle = fillStyle;
+
+    ctx.shadowBlur = shadowBlur;
+    ctx.shadowColor = shadowColor;
+
+    ctx.fillText(emoji, 0, 0);
+    ctx.restore();
+  }
+
+  ctx.textRendering = 'optimizeLegibility';
+
+  // --- 상수 및 설정 ---
+  const TREATS = ['🍬','🍭','🍫','🍩','🍪','🧁','🍰','🥨','🥐','🥯','🧇','🥞','🌭','🍟','🍕'];
+
+  // 전투(줄다리기) 튜닝
+  const TUG = {
+    START_RANGE: 180,     // 병정개미가 위협을 인지하는 거리
+    SNAP_RANGE: 55,       // 이 정도 가까워지면 줄다리기 고정
+    PULL_AMP: 10,         // 왕복 흔들림(밀고당기기) 크기
+    DAMAGE_EVERY_FRAMES: 45, // 몇 프레임마다 1번 타격(대략 0.75초 @60fps)
+    LOCK_MIN_FRAMES: 120, // 최소 몇 프레임은 붙잡고 늘어짐(코믹)
+  };
+
+  // --- 게임 상태 ---
+  const state = {
+    score: 0,
+    ants: [],
+    foods: [],
+    particles: [],
+    weatherParticles: [],
+    threats: [],
+    lastTime: 0,
+    groundY: 0,
+    nestEntrance: { x: 0, y: 0 },
+    rooms: [],
+
+    isNight: false,
+    weather: 'SUNNY',
+    weatherTimer: 0,
+    weatherDuration: 30,
+    skyColor: { r: 176, g: 224, b: 230 },
+    targetSkyColor: { r: 176, g: 224, b: 230 },
+
+    threatTimer: 0,
+    threatInterval: 20
+  };
+
+  const scoreEl = document.getElementById('scoreDisplay');
+  const antCountEl = document.getElementById('antCountDisplay');
+  const soldierCountEl = document.getElementById('soldierCount');
+  const buyBtn = document.getElementById('buyAntBtn');
+  const toast = document.getElementById('toast');
+  const threatWarning = document.getElementById('threatWarning');
+  const weatherIcon = document.getElementById('weatherIcon');
+
+  // --- 오디오 ---
+  let audioCtx = null;
+  function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  function playSound(type) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+    if (type === 'drop') {
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.15);
+    } else if (type === 'collect') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1400, now + 0.12);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.12);
+    } else if (type === 'born') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(500, now);
+      osc.frequency.linearRampToValueAtTime(900, now + 0.25);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.35);
+    } else if (type === 'threat') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.3);
+    } else if (type === 'defend') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.linearRampToValueAtTime(650, now + 0.12);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.16);
+    }
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
+
+  // --- 클래스 ---
+  class Particle {
+    constructor(x, y, color) {
+      this.x = x;
+      this.y = y;
+      this.vx = (Math.random()-0.5)*5;
+      this.vy = (Math.random()-0.5)*5 - 2;
+      this.life = 1.0;
+      this.color = color;
+      this.size = Math.random()*4+3;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.vy += 0.2;
+      this.life -= 0.025;
+    }
+    draw(ctx) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, this.life);
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath();
+      ctx.arc(this.x - this.size*0.3, this.y - this.size*0.3, this.size*0.4, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  class WeatherParticle {
+    constructor(type) { this.reset(type); }
+    reset(type) {
+      this.type = type;
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * state.groundY - 50;
+      if (type === 'RAINY') {
+        this.vx = -0.5 + Math.random();
+        this.vy = 8 + Math.random()*4;
+        this.len = 8 + Math.random()*8;
+        this.color = 'rgba(135,206,250,0.5)';
+      } else if (type === 'SNOWY') {
+        this.vx = -0.5 + Math.random();
+        this.vy = 0.8 + Math.random()*1.5;
+        this.size = 3 + Math.random()*4;
+        this.color = 'rgba(255,255,255,0.9)';
+      } else if (type === 'NIGHT_FLY') {
+        this.x = Math.random() * canvas.width;
+        this.y = state.groundY - Math.random()*100;
+        this.vx = (Math.random()-0.5);
+        this.vy = (Math.random()-0.5);
+        this.size = 3;
+        this.color = '#FFD700';
+        this.life = 100;
+      }
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.type !== 'NIGHT_FLY') {
+        if (this.y > state.groundY) {
+          this.y = -20;
+          this.x = Math.random()*canvas.width;
         }
-        function playSound(type) {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
-            
-            if (type === 'drop') {
-                osc.frequency.setValueAtTime(600, now);
-                osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.15);
-            } else if (type === 'collect') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.exponentialRampToValueAtTime(1400, now + 0.12);
-                gain.gain.setValueAtTime(0.08, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.12);
-            } else if (type === 'born') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(500, now);
-                osc.frequency.linearRampToValueAtTime(900, now + 0.25);
-                gain.gain.setValueAtTime(0.12, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.35);
-            } else if (type === 'threat') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.3);
-            } else if (type === 'defend') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.linearRampToValueAtTime(600, now + 0.1);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.15);
-            }
-            osc.start(now);
-            osc.stop(now + 0.4);
-        }
+      } else {
+        this.vx += (Math.random()-0.5)*0.1;
+        this.vy += (Math.random()-0.5)*0.1;
+        if (this.life-- < 0) this.reset('NIGHT_FLY');
+      }
+    }
+    draw(ctx) {
+      ctx.save();
+      ctx.fillStyle = this.color;
+      ctx.strokeStyle = this.color;
+      if (this.type === 'RAINY') {
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x+this.vx, this.y+this.len);
+        ctx.stroke();
+      } else if (this.type === 'SNOWY') {
+        ctx.fillStyle = 'white';
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = 'white';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+        ctx.fill();
+      } else if (this.type === 'NIGHT_FLY' && state.isNight) {
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
 
-        // --- 클래스 정의 ---
+  class Threat {
+    constructor(type) {
+      this.type = type; // 'ANTEATER','SPIDER','BIRD'
+      this.x = canvas.width + 100;
+      this.y = state.groundY - 50;
+      this.vx = -2;
+      this.state = 'APPROACHING';
+      this.attackTimer = 0;
+      this.attackDuration = 3000;
+      this.defended = false;
 
-        class Particle {
-            constructor(x, y, color) {
-                this.x = x; 
-                this.y = y;
-                this.vx = (Math.random()-0.5)*5; 
-                this.vy = (Math.random()-0.5)*5 - 2;
-                this.life = 1.0; 
-                this.color = color; 
-                this.size = Math.random()*4+3;
-            }
-            update() { 
-                this.x += this.vx; 
-                this.y += this.vy; 
-                this.vy += 0.2;
-                this.life -= 0.025; 
-            }
-            draw(ctx) {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, this.life);
-                ctx.fillStyle = this.color;
-                ctx.beginPath(); 
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); 
-                ctx.fill();
-                ctx.fillStyle = 'rgba(255,255,255,0.6)';
-                ctx.beginPath();
-                ctx.arc(this.x - this.size*0.3, this.y - this.size*0.3, this.size*0.4, 0, Math.PI*2);
-                ctx.fill();
-                ctx.restore();
-            }
-        }
+      this.hp = type === 'BIRD' ? 1 : (type === 'SPIDER' ? 2 : 3);
+      this.maxHp = this.hp;
+      this.size = type === 'BIRD' ? 60 : (type === 'SPIDER' ? 40 : 70);
+      this.wiggle = 0;
 
-        class WeatherParticle {
-            constructor(type) { this.reset(type); }
-            reset(type) {
-                this.type = type;
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * state.groundY - 50;
-                if (type === 'RAINY') {
-                    this.vx = -0.5 + Math.random(); 
-                    this.vy = 8 + Math.random()*4;
-                    this.len = 8 + Math.random()*8; 
-                    this.color = 'rgba(135,206,250,0.5)';
-                } else if (type === 'SNOWY') {
-                    this.vx = -0.5 + Math.random(); 
-                    this.vy = 0.8 + Math.random()*1.5;
-                    this.size = 3 + Math.random()*4; 
-                    this.color = 'rgba(255,255,255,0.9)';
-                } else if (type === 'NIGHT_FLY') {
-                    this.x = Math.random() * canvas.width;
-                    this.y = state.groundY - Math.random()*100;
-                    this.vx = (Math.random()-0.5); 
-                    this.vy = (Math.random()-0.5);
-                    this.size = 3; 
-                    this.color = '#FFD700'; 
-                    this.life = 100;
-                }
-            }
-            update() {
-                this.x += this.vx; 
-                this.y += this.vy;
-                if (this.type !== 'NIGHT_FLY') {
-                    if (this.y > state.groundY) { 
-                        this.y = -20; 
-                        this.x = Math.random()*canvas.width; 
-                    }
-                } else {
-                    this.vx += (Math.random()-0.5)*0.1; 
-                    this.vy += (Math.random()-0.5)*0.1;
-                    if (this.life-- < 0) this.reset('NIGHT_FLY');
-                }
-            }
-            draw(ctx) {
-                ctx.save();
-                ctx.fillStyle = this.color; 
-                ctx.strokeStyle = this.color;
-                if (this.type === 'RAINY') {
-                    ctx.lineWidth = 2;
-                    ctx.lineCap = 'round';
-                    ctx.beginPath(); 
-                    ctx.moveTo(this.x, this.y); 
-                    ctx.lineTo(this.x+this.vx, this.y+this.len); 
-                    ctx.stroke();
-                } else if (this.type === 'SNOWY') {
-                    ctx.fillStyle = 'white';
-                    ctx.shadowBlur = 4;
-                    ctx.shadowColor = 'white';
-                    ctx.beginPath(); 
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); 
-                    ctx.fill();
-                } else if (this.type === 'NIGHT_FLY' && state.isNight) {
-                    ctx.shadowBlur = 8; 
-                    ctx.shadowColor = '#FFD700';
-                    ctx.beginPath(); 
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); 
-                    ctx.fill();
-                }
-                ctx.restore();
-            }
-        }
+      // 피격 연출
+      this.hitFlash = 0;
+      this.knockback = 0;
 
-        class Threat {
-            constructor(type) {
-                this.type = type; // 'ANTEATER', 'SPIDER', 'BIRD'
-                this.x = canvas.width + 100;
-                this.y = state.groundY - 50;
-                this.vx = -2;
-                this.state = 'APPROACHING';
-                this.attackTimer = 0;
-                this.attackDuration = 3000; // 3초간 공격
-                this.defended = false;
-                this.hp = type === 'BIRD' ? 1 : (type === 'SPIDER' ? 2 : 3);
-                this.maxHp = this.hp;
-                this.size = type === 'BIRD' ? 60 : (type === 'SPIDER' ? 40 : 70);
-                this.wiggle = 0;
-            }
-            
-            update(dt) {
-                this.wiggle += 0.1;
-                
-                if (this.state === 'APPROACHING') {
-                    this.x += this.vx;
-                    
-                    // 비둘기는 위아래로 움직임
-                    if (this.type === 'BIRD') {
-                        this.y = state.groundY - 50 + Math.sin(this.wiggle) * 20;
-                    }
-                    
-                    if (this.x < canvas.width / 2) {
-                        this.state = 'ATTACKING';
-                        this.vx = 0;
-                        playSound('threat');
-                        showThreatWarning(`${this.getEmoji()} 위험!`);
-                    }
-                } else if (this.state === 'ATTACKING') {
-                    this.attackTimer += dt;
-                    
-                    // 공격 중 흔들림
-                    this.x += Math.sin(this.wiggle * 2) * 2;
-                    
-                    if (this.attackTimer >= this.attackDuration) {
-                        return false; // 공격 끝나면 제거
-                    }
-                } else if (this.state === 'RETREATING') {
-                    this.x += 5; // 빠르게 도망
-                    if (this.x > canvas.width + 100) return false;
-                }
-                
-                return true;
-            }
-            
-            getEmoji() {
-                if (this.type === 'ANTEATER') return '🦡';
-                if (this.type === 'SPIDER') return '🕷️';
-                if (this.type === 'BIRD') return '🐦';
-                return '👾';
-            }
-            
-            takeDamage() {
-                this.hp--;
-                playSound('defend');
-                
-                // 피격 파티클
-                for(let i=0; i<5; i++) {
-                    state.particles.push(new Particle(this.x, this.y, '#FF6B6B'));
-                }
-                
-                if (this.hp <= 0) {
-                    this.state = 'RETREATING';
-                    this.defended = true;
-                    showToast('병정개미가 적을 쫓아냈어요! 💪');
-                }
-            }
-            
-            draw(ctx) {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                
-                // HP 바
-                if (this.state === 'ATTACKING' && this.hp < this.maxHp) {
-                    const barWidth = 50;
-                    const barHeight = 5;
-                    ctx.fillStyle = '#FF6B6B';
-                    ctx.fillRect(-barWidth/2, -this.size/2 - 15, barWidth, barHeight);
-                    ctx.fillStyle = '#4CAF50';
-                    ctx.fillRect(-barWidth/2, -this.size/2 - 15, barWidth * (this.hp / this.maxHp), barHeight);
-                }
-                
-                // 위협 그리기
-                ctx.font = `${this.size}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                
-                // 그림자 효과
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = 'rgba(255,0,0,0.5)';
-                
-                ctx.fillText(this.getEmoji(), 0, 0);
-                
-                ctx.restore();
-            }
+      // 줄다리기 상태
+      this.grappler = null;   // 붙잡은 병정개미
+      this.tugPhase = 0;
+    }
+
+    update(dt) {
+      this.wiggle += 0.1;
+
+      // 넉백/플래시 감소
+      if (this.knockback > 0) {
+        this.x += this.knockback;
+        this.knockback *= 0.75;
+        if (this.knockback < 0.2) this.knockback = 0;
+      }
+      if (this.hitFlash > 0) this.hitFlash--;
+
+      if (this.state === 'APPROACHING') {
+        this.x += this.vx;
+
+        if (this.type === 'BIRD') {
+          this.y = state.groundY - 50 + Math.sin(this.wiggle) * 20;
         }
 
-        class Food {
-            constructor(x, y) {
-                this.x = x; 
-                this.y = -50; 
-                this.targetY = y;
-                this.type = TREATS[Math.floor(Math.random() * TREATS.length)];
-                this.state = 'FALLING'; 
-                this.carrier = null;
-                this.decayTime = 0; 
-                this.maxDecayTime = 12000; 
-                this.rotation = 0;
-                this.bounceY = 0;
-            }
-            update(dt) {
-                if (this.state === 'FALLING') {
-                    this.y += 12; 
-                    this.rotation += 0.15;
-                    if (this.y >= this.targetY) {
-                        this.y = this.targetY; 
-                        this.state = 'GROUND'; 
-                        this.rotation = 0;
-                        playSound('drop');
-                        const colors = ['#FFB6C1', '#FFDAB9', '#E0BBE4', '#B0E57C', '#87CEEB'];
-                        for(let i=0;i<8;i++) {
-                            state.particles.push(new Particle(this.x, this.y, colors[Math.floor(Math.random()*colors.length)]));
-                        }
-                    }
-                } else if (this.state === 'GROUND') {
-                    this.bounceY = Math.sin(Date.now() * 0.005) * 3;
-                } else if (this.state === 'STORED') {
-                    this.decayTime += dt;
-                    if (this.decayTime >= this.maxDecayTime) return false;
-                    if (Math.random() < 0.05) {
-                        state.particles.push(new Particle(
-                            this.x+(Math.random()-0.5)*20, 
-                            this.y, 
-                            '#FFD700'
-                        ));
-                    }
-                }
-                return true;
-            }
-            draw(ctx) {
-                ctx.save(); 
-                ctx.translate(this.x, this.y + this.bounceY);
-                if (this.state === 'STORED') {
-                    const s = 1 - (this.decayTime/this.maxDecayTime*0.8);
-                    ctx.globalAlpha = 1 - (this.decayTime/this.maxDecayTime); 
-                    ctx.scale(s, s);
-                } else if (this.state === 'FALLING') {
-                    ctx.rotate(this.rotation);
-                }
-                if (this.state !== 'STORED') {
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                }
-                
-                // 이모지 렌더링 최적화
-                ctx.font = "36px Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'";
-                ctx.textAlign = "center"; 
-                ctx.textBaseline = "middle";
-                ctx.fillText(this.type, 0, 0); 
-                ctx.restore();
-            }
+        if (this.x < canvas.width / 2) {
+          this.state = 'ATTACKING';
+          this.vx = 0;
+          playSound('threat');
+          showThreatWarning(`${this.getEmoji()} 위험!`);
+        }
+      }
+      else if (this.state === 'ATTACKING') {
+        // 줄다리기 중이면 공격 진행이 조금 느려짐(코믹하게 오래 버팀)
+        const slow = this.grappler ? 0.6 : 1.0;
+        this.attackTimer += dt * slow;
+
+        // 기본 흔들림
+        this.x += Math.sin(this.wiggle * 2) * (this.grappler ? 1 : 2);
+
+        // 줄다리기용 페이즈
+        if (this.grappler) this.tugPhase += 0.25;
+
+        if (this.attackTimer >= this.attackDuration) return false;
+      }
+      else if (this.state === 'RETREATING') {
+        this.x += 5;
+        if (this.x > canvas.width + 100) return false;
+      }
+
+      return true;
+    }
+
+    getEmoji() {
+      if (this.type === 'ANTEATER') return '🦡';
+      if (this.type === 'SPIDER') return '🕷️';
+      if (this.type === 'BIRD') return '🐦';
+      return '👾';
+    }
+
+    takeDamage() {
+      this.hp--;
+      this.hitFlash = 10;
+      this.knockback = 8;
+
+      playSound('defend');
+
+      for (let i=0; i<6; i++) {
+        state.particles.push(new Particle(this.x + (Math.random()-0.5)*10, this.y + (Math.random()-0.5)*10, '#FF6B6B'));
+      }
+
+      if (this.hp <= 0) {
+        this.state = 'RETREATING';
+        this.defended = true;
+
+        // 줄다리기 해제
+        if (this.grappler) {
+          this.grappler.endTug(true);
+          this.grappler = null;
         }
 
-        class Ant {
-            constructor() {
-                const spawnRoom = state.rooms[state.rooms.length - 1];
-                this.x = spawnRoom.x;
-                this.y = spawnRoom.y;
-                
-                const typeRand = Math.random();
-                if (typeRand < 0.6) this.type = 'WORKER';
-                else if (typeRand < 0.9) this.type = 'SCOUT';
-                else this.type = 'SOLDIER';
+        showToast('병정개미가 적을 쫓아냈어요! 💪');
+      }
+    }
 
-                if (this.type === 'WORKER') {
-                    this.color = '#8B4513';
-                    this.baseSpeed = 2.0 + Math.random();
-                    this.size = 1.0;
-                } else if (this.type === 'SCOUT') {
-                    this.color = '#FF8C69';
-                    this.baseSpeed = 3.5 + Math.random();
-                    this.size = 0.8;
-                } else {
-                    this.color = '#DC143C';
-                    this.baseSpeed = 1.5 + Math.random();
-                    this.size = 1.3;
-                }
+    draw(ctx) {
+      ctx.save();
+      ctx.translate(this.x, this.y);
 
-                this.state = 'IDLE'; 
-                this.targetFood = null;
-                this.targetPos = { x: this.x, y: this.y };
-                this.patrolTimer = 0;
-                this.patrolDelay = 60 + Math.random() * 60;
-                this.wiggle = Math.random() * 10;
-                this.holdingFood = null;
-                this.angle = 0;
-                this.stunTimer = 0; // 스턴 상태
-                this.defendCooldown = 0; // 방어 쿨다운
-                
-                this.setRandomPatrolTarget();
-            }
+      // HP 바
+      if (this.state === 'ATTACKING' && this.hp < this.maxHp) {
+        const barWidth = 50;
+        const barHeight = 5;
+        ctx.fillStyle = '#FF6B6B';
+        ctx.fillRect(-barWidth/2, -this.size/2 - 15, barWidth, barHeight);
+        ctx.fillStyle = '#4CAF50';
+        ctx.fillRect(-barWidth/2, -this.size/2 - 15, barWidth * (this.hp / this.maxHp), barHeight);
+      }
 
-            setRandomPatrolTarget() {
-                // 병정개미는 입구 근처를 더 자주 순찰
-                if (this.type === 'SOLDIER' && Math.random() < 0.7) {
-                    this.targetPos = { 
-                        x: state.nestEntrance.x + (Math.random()-0.5)*80, 
-                        y: state.nestEntrance.y + 10 
-                    };
-                } else if (Math.random() < 0.3 || this.type === 'SCOUT') {
-                    this.targetPos = { 
-                        x: state.nestEntrance.x + (Math.random()-0.5)*40, 
-                        y: state.nestEntrance.y + 10 
-                    };
-                } else {
-                    const room = state.rooms[Math.floor(Math.random() * state.rooms.length)];
-                    this.targetPos = { 
-                        x: room.x + (Math.random()-0.5)*(room.w-20), 
-                        y: room.y + (Math.random()-0.5)*(room.h-20) 
-                    };
-                }
-                this.patrolDelay = 60 + Math.random() * 60;
-            }
+      // 피격 시 살짝 커짐
+      if (this.hitFlash > 0) {
+        const s = 1 + (this.hitFlash / 10) * 0.12;
+        ctx.scale(s, s);
+      }
 
-            getCurrentSpeed() {
-                if (this.stunTimer > 0) return 0;
-                return state.weather === 'RAINY' && this.y < state.groundY 
-                    ? this.baseSpeed * 0.5 
-                    : this.baseSpeed;
-            }
+      drawEmoji(ctx, this.getEmoji(), 0, 0, this.size, {
+        shadowBlur: this.hitFlash > 0 ? 25 : 15,
+        shadowColor: this.hitFlash > 0 ? 'rgba(255,255,255,0.9)' : 'rgba(255,0,0,0.5)',
+        fillStyle: '#000'
+      });
 
-            moveTowards(x, y) {
-                const speed = this.getCurrentSpeed();
-                const dx = x - this.x;
-                const dy = y - this.y;
-                const dist = Math.hypot(dx, dy);
-                this.angle = Math.atan2(dy, dx);
-                
-                if (dist > speed) {
-                    this.x += Math.cos(this.angle) * speed;
-                    this.y += Math.sin(this.angle) * speed;
-                    return false;
-                } else {
-                    this.x = x; 
-                    this.y = y;
-                    return true;
-                }
-            }
-
-            update() {
-                this.wiggle += 0.5;
-                
-                // 스턴 처리
-                if (this.stunTimer > 0) {
-                    this.stunTimer--;
-                    if (this.stunTimer % 10 === 0) {
-                        state.particles.push(new Particle(this.x, this.y - 10, '#FFA500'));
-                    }
-                    return;
-                }
-                
-                // 방어 쿨다운
-                if (this.defendCooldown > 0) this.defendCooldown--;
-
-                // 병정개미 방어 행동
-                if (this.type === 'SOLDIER' && this.defendCooldown === 0) {
-                    const nearThreat = state.threats.find(t => 
-                        t.state === 'ATTACKING' && 
-                        Math.hypot(t.x - this.x, t.y - this.y) < 150
-                    );
-                    
-                    if (nearThreat && !nearThreat.defended) {
-                        // 위협 공격
-                        nearThreat.takeDamage();
-                        this.defendCooldown = 60; // 1초 쿨다운
-                        
-                        // 공격 파티클
-                        for(let i=0; i<3; i++) {
-                            state.particles.push(new Particle(
-                                this.x + (Math.random()-0.5)*20, 
-                                this.y, 
-                                '#FFD700'
-                            ));
-                        }
-                    }
-                }
-
-                if (this.state === 'IDLE') {
-                    const target = state.foods.find(f => f.state === 'GROUND' && !f.carrier);
-                    if (target && this.type !== 'SOLDIER') { // 병정개미는 음식 운반 안 함
-                        target.carrier = this;
-                        this.targetFood = target;
-                        this.state = 'SEEKING';
-                        this.patrolTimer = 0;
-                    } else {
-                        const distToTarget = Math.hypot(this.targetPos.x - this.x, this.targetPos.y - this.y);
-                        
-                        if (distToTarget < 5) {
-                            this.patrolTimer++;
-                            if (this.patrolTimer >= this.patrolDelay) {
-                                this.setRandomPatrolTarget();
-                                this.patrolTimer = 0;
-                            }
-                        } else {
-                            this.moveTowards(this.targetPos.x, this.targetPos.y);
-                            this.patrolTimer = 0;
-                        }
-                    }
-                } 
-                else if (this.state === 'SEEKING') {
-                    if (!this.targetFood || this.targetFood.state !== 'GROUND') {
-                        this.state = 'IDLE'; 
-                        this.targetFood = null; 
-                        this.setRandomPatrolTarget();
-                        return;
-                    }
-                    if (this.y > state.groundY + 5) {
-                        this.moveTowards(state.nestEntrance.x, state.nestEntrance.y);
-                    } else {
-                        if (this.moveTowards(this.targetFood.x, this.targetFood.y)) {
-                            this.targetFood.state = 'CARRIED';
-                            this.holdingFood = this.targetFood;
-                            this.state = 'RETURNING';
-                            const storage = state.rooms[Math.floor(Math.random() * (state.rooms.length-1))];
-                            this.targetPos = { 
-                                x: storage.x + (Math.random()-0.5)*60, 
-                                y: storage.y 
-                            };
-                        }
-                    }
-                }
-                else if (this.state === 'RETURNING') {
-                    if (!this.holdingFood) { 
-                        this.state = 'IDLE'; 
-                        this.setRandomPatrolTarget();
-                        return; 
-                    }
-                    this.holdingFood.x = this.x;
-                    this.holdingFood.y = this.y - 20;
-                    
-                    if (this.y < state.groundY && Math.abs(this.x - state.nestEntrance.x) > 5) {
-                        this.moveTowards(state.nestEntrance.x, state.nestEntrance.y);
-                    } else {
-                        if (this.moveTowards(this.targetPos.x, this.targetPos.y)) {
-                            this.holdingFood.state = 'STORED';
-                            this.holdingFood = null;
-                            this.targetFood = null;
-                            this.state = 'IDLE';
-                            this.setRandomPatrolTarget();
-                            playSound('collect');
-                        }
-                    }
-                }
-            }
-
-            draw(ctx) {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                
-                // 스턴 이펙트
-                if (this.stunTimer > 0) {
-                    ctx.font = "20px Arial";
-                    ctx.textAlign = "center";
-                    ctx.fillText("💫", 0, -25);
-                }
-                
-                if (Math.abs(this.angle) > Math.PI/2) ctx.scale(-1, 1);
-                ctx.scale(this.size, this.size);
-                
-                ctx.strokeStyle = this.color;
-                ctx.lineWidth = 2.5;
-                ctx.lineCap = 'round';
-                const legWiggle = Math.sin(this.wiggle) * 4;
-                ctx.beginPath();
-                ctx.moveTo(3, 2); ctx.lineTo(7 + legWiggle, 8);
-                ctx.moveTo(-3, 2); ctx.lineTo(-7 - legWiggle, 8);
-                ctx.moveTo(1, 0); ctx.lineTo(5 + legWiggle, 5);
-                ctx.moveTo(-1, 0); ctx.lineTo(-5 - legWiggle, 5);
-                ctx.stroke();
-
-                ctx.fillStyle = this.color;
-                
-                if (this.type === 'SOLDIER') {
-                    ctx.beginPath(); 
-                    ctx.arc(6, -3, 6, 0, Math.PI*2); 
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                    ctx.beginPath();
-                    ctx.arc(7, -5, 2, 0, Math.PI*2);
-                    ctx.fill();
-                    ctx.fillStyle = this.color;
-                    
-                    ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(-5, 0, 4.5, 0, Math.PI*2); ctx.fill();
-                    
-                    ctx.fillStyle = 'white';
-                    ctx.beginPath(); ctx.arc(7, -4, 1.5, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = 'black';
-                    ctx.beginPath(); ctx.arc(7.5, -4, 0.8, 0, Math.PI*2); ctx.fill();
-
-                } else if (this.type === 'SCOUT') {
-                    ctx.beginPath(); ctx.arc(5, -2, 3, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                    ctx.beginPath(); ctx.arc(6, -3, 1.2, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = this.color;
-                    
-                    ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(-4, 0, 3.5, 0, Math.PI*2); ctx.fill();
-                    
-                    ctx.fillStyle = 'white';
-                    ctx.beginPath(); ctx.arc(6, -3, 1.2, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = 'black';
-                    ctx.beginPath(); ctx.arc(6.3, -3, 0.6, 0, Math.PI*2); ctx.fill();
-
-                } else {
-                    ctx.beginPath(); ctx.arc(5, -2, 3.5, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                    ctx.beginPath(); ctx.arc(6, -3.5, 1.5, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = this.color;
-                    
-                    ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(-5, 0, 4, 0, Math.PI*2); ctx.fill();
-                    
-                    ctx.fillStyle = 'white';
-                    ctx.beginPath(); ctx.arc(6, -3, 1.3, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = 'black';
-                    ctx.beginPath(); ctx.arc(6.4, -3, 0.7, 0, Math.PI*2); ctx.fill();
-                }
-
-                ctx.strokeStyle = this.color;
-                ctx.lineWidth = 2;
-                ctx.lineCap = 'round';
-                ctx.beginPath(); 
-                ctx.moveTo(5, -4); 
-                ctx.quadraticCurveTo(8, -8, 9, -7);
-                ctx.stroke();
-
-                ctx.restore();
-            }
-        }
-
-        // --- 위협 시스템 ---
-        function spawnThreat() {
-            const soldierCount = state.ants.filter(a => a.type === 'SOLDIER').length;
-            
-            // 병정개미가 많으면 위협 확률 감소
-            const threatChance = Math.max(0.3, 0.7 - (soldierCount * 0.1));
-            
-            if (Math.random() > threatChance) return;
-            
-            const types = ['ANTEATER', 'SPIDER', 'BIRD'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            
-            state.threats.push(new Threat(type));
-        }
-
-        function handleThreatDamage(threat) {
-            if (threat.defended) return; // 이미 방어됨
-            
-            const soldierCount = state.ants.filter(a => a.type === 'SOLDIER').length;
-            
-            // 병정개미가 있으면 피해 감소
-            const damageReduction = Math.min(0.7, soldierCount * 0.2);
-            
-            // 음식 피해
-            const groundFoods = state.foods.filter(f => f.state === 'GROUND');
-            if (groundFoods.length > 0 && Math.random() > damageReduction) {
-                const stolen = groundFoods[Math.floor(Math.random() * groundFoods.length)];
-                state.foods = state.foods.filter(f => f !== stolen);
-                
-                // 피해 파티클
-                for(let i=0; i<10; i++) {
-                    state.particles.push(new Particle(stolen.x, stolen.y, '#FF6B6B'));
-                }
-            }
-            
-            // 점수 피해 (병정개미가 있으면 감소)
-            const scoreLoss = Math.floor(10 * (1 - damageReduction));
-            state.score = Math.max(0, state.score - scoreLoss);
-            
-            // 개미 스턴 (병정개미 제외)
-            const stunDuration = Math.floor(120 * (1 - damageReduction));
-            state.ants.forEach(ant => {
-                if (ant.type !== 'SOLDIER' && Math.random() < 0.3) {
-                    ant.stunTimer = stunDuration;
-                }
-            });
-            
-            updateUI();
-        }
-
-        function showThreatWarning(msg) {
-            threatWarning.innerText = msg;
-            threatWarning.style.opacity = 1;
-            setTimeout(() => { threatWarning.style.opacity = 0; }, 2000);
-        }
-
-        // --- 시스템 함수 ---
-
-        function updateWeather(dt) {
-            state.weatherTimer += dt / 1000;
-            if (state.weatherTimer > state.weatherDuration) {
-                state.weatherTimer = 0;
-                state.isNight = !state.isNight;
-                
-                const rand = Math.random();
-                if (rand < 0.4) state.weather = 'SUNNY';
-                else if (rand < 0.7) state.weather = 'RAINY';
-                else if (rand < 0.9) state.weather = 'CLOUDY';
-                else state.weather = 'SNOWY';
-
-                if (state.isNight) {
-                    state.targetSkyColor = { r: 44, g: 62, b: 80 };
-                    showToast(state.weather === 'RAINY' ? "밤비가 내려요 🌧️" : "별이 반짝여요 ✨");
-                } else {
-                    if (state.weather === 'RAINY' || state.weather === 'CLOUDY') {
-                        state.targetSkyColor = { r: 169, g: 169, b: 169 };
-                    } else {
-                        state.targetSkyColor = { r: 176, g: 224, b: 230 };
-                    }
-                    showToast("좋은 아침이에요! ☀️");
-                }
-
-                state.weatherParticles = [];
-                if (state.weather === 'RAINY') {
-                    for(let i=0; i<50; i++) state.weatherParticles.push(new WeatherParticle('RAINY'));
-                    weatherIcon.innerText = state.isNight ? '🌧️' : '🌧️';
-                } else if (state.weather === 'SNOWY') {
-                    for(let i=0; i<40; i++) state.weatherParticles.push(new WeatherParticle('SNOWY'));
-                    weatherIcon.innerText = '❄️';
-                } else if (state.weather === 'CLOUDY') {
-                    weatherIcon.innerText = '☁️';
-                } else {
-                    weatherIcon.innerText = state.isNight ? '🌙' : '☀️';
-                }
-                
-                if (state.isNight && state.weather === 'SUNNY') {
-                    for(let i=0; i<15; i++) state.weatherParticles.push(new WeatherParticle('NIGHT_FLY'));
-                }
-            }
-            const speed = 0.01;
-            state.skyColor.r += (state.targetSkyColor.r - state.skyColor.r) * speed;
-            state.skyColor.g += (state.targetSkyColor.g - state.skyColor.g) * speed;
-            state.skyColor.b += (state.targetSkyColor.b - state.skyColor.b) * speed;
-            
-            // 위협 시스템 업데이트
-            state.threatTimer += dt / 1000;
-            if (state.threatTimer > state.threatInterval) {
-                state.threatTimer = 0;
-                spawnThreat();
-            }
-        }
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            state.groundY = canvas.height * 0.35;
-            state.nestEntrance = { x: canvas.width/2, y: state.groundY };
-            const cx = canvas.width/2;
-            const h = canvas.height - state.groundY;
-            state.rooms = [
-                { x: cx-100, y: state.groundY + h*0.25, w: 100, h: 60 },
-                { x: cx+100, y: state.groundY + h*0.35, w: 100, h: 60 },
-                { x: cx-80, y: state.groundY + h*0.55, w: 120, h: 70 },
-                { x: cx+80, y: state.groundY + h*0.65, w: 120, h: 70 },
-                { x: cx, y: state.groundY + h*0.9, w: 180, h: 80 }
-            ];
-        }
-
-        function drawEnvironment() {
-            const c = state.skyColor;
-            const gradient = ctx.createLinearGradient(0, 0, 0, state.groundY);
-            gradient.addColorStop(0, `rgb(${Math.floor(c.r)}, ${Math.floor(c.g)}, ${Math.floor(c.b)})`);
-            gradient.addColorStop(1, `rgb(${Math.floor(c.r*0.9)}, ${Math.floor(c.g*0.9)}, ${Math.floor(c.b*0.9)})`);
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, state.groundY);
-            
-            ctx.fillStyle = '#D2B48C';
-            ctx.fillRect(0, state.groundY, canvas.width, canvas.height);
-            
-            const grassGradient = ctx.createLinearGradient(0, state.groundY - 15, 0, state.groundY);
-            grassGradient.addColorStop(0, state.isNight ? '#7CB342' : '#9CCC65');
-            grassGradient.addColorStop(1, state.isNight ? '#558B2F' : '#7CB342');
-            ctx.fillStyle = grassGradient;
-            ctx.fillRect(0, state.groundY - 15, canvas.width, 15);
-
-            ctx.save(); 
-            ctx.lineCap = 'round'; 
-            ctx.lineJoin = 'round';
-            
-            const cx = canvas.width/2;
-            
-            ctx.beginPath();
-            ctx.moveTo(cx, state.groundY);
-            ctx.lineTo(cx, canvas.height - 50);
-            state.rooms.forEach(r => { 
-                ctx.moveTo(cx, r.y); 
-                ctx.lineTo(r.x, r.y); 
-            });
-            ctx.lineWidth = 18;
-            ctx.strokeStyle = '#A0826D';
-            ctx.stroke();
-            
-            state.rooms.forEach(r => {
-                ctx.fillStyle = 'rgba(0,0,0,0.1)';
-                ctx.beginPath();
-                ctx.ellipse(r.x+2, r.y+2, r.w/2, r.h/2, 0, 0, Math.PI*2);
-                ctx.fill();
-                
-                ctx.fillStyle = '#A0826D';
-                ctx.beginPath();
-                ctx.ellipse(r.x, r.y, r.w/2, r.h/2, 0, 0, Math.PI*2);
-                ctx.fill();
-                
-                ctx.strokeStyle = '#8B7355';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-            });
-            
-            ctx.restore();
-            
-            const q = state.rooms[state.rooms.length-1];
-            ctx.font = "50px Arial, 'Apple Color Emoji'"; 
-            ctx.textAlign = "center";
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = 'rgba(255,215,0,0.5)';
-            ctx.fillText("👑", q.x, q.y + 5);
-            ctx.shadowBlur = 0;
-        }
-
-        function showToast(msg) {
-            toast.innerText = msg; 
-            toast.style.opacity = 1;
-            setTimeout(() => { toast.style.opacity = 0; }, 2500);
-        }
-
-        function gameLoop(timestamp) {
-            const dt = timestamp - state.lastTime;
-            state.lastTime = timestamp;
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            updateWeather(dt);
-            drawEnvironment();
-            
-            state.weatherParticles.forEach(p => { p.update(); p.draw(ctx); });
-            
-            state.foods = state.foods.filter(f => {
-                const alive = f.update(dt);
-                if (!alive) { 
-                    state.score += 15; 
-                    updateUI(); 
-                    for(let i=0; i<10; i++) {
-                        state.particles.push(new Particle(f.x, f.y, '#FFD700'));
-                    }
-                }
-                f.draw(ctx);
-                return alive;
-            });
-            
-            // 위협 업데이트
-            state.threats = state.threats.filter(threat => {
-                const alive = threat.update(dt);
-                
-                // 공격 중일 때 주기적으로 피해
-                if (threat.state === 'ATTACKING' && !threat.defended) {
-                    if (Math.floor(threat.attackTimer) % 1000 < 20) {
-                        handleThreatDamage(threat);
-                    }
-                }
-                
-                threat.draw(ctx);
-                return alive;
-            });
-            
-            state.ants.forEach(a => { a.update(); a.draw(ctx); });
-            
-            state.particles = state.particles.filter(p => { 
-                p.update(); 
-                p.draw(ctx); 
-                return p.life > 0; 
-            });
-            
-            requestAnimationFrame(gameLoop);
-        }
-
-        function updateUI() {
-            scoreEl.innerText = Math.floor(state.score);
-            antCountEl.innerText = state.ants.length;
-            soldierCountEl.innerText = state.ants.filter(a => a.type === 'SOLDIER').length;
-            
-            if (state.score >= 50) {
-                buyBtn.disabled = false; 
-                buyBtn.innerText = "🐜 새 개미 부화하기 (사탕 50개)";
-            } else {
-                buyBtn.disabled = true; 
-                buyBtn.innerText = `사탕 모으는 중... (${Math.floor(state.score)}/50)`;
-            }
-        }
-
-        // --- 이벤트 ---
-        canvas.addEventListener('touchstart', handleInput, {passive: false});
-        canvas.addEventListener('mousedown', handleInput);
-
-        function handleInput(e) {
-            e.preventDefault(); 
-            initAudio();
-            
-            const rect = canvas.getBoundingClientRect();
-            const x = e.touches ? e.touches[0].clientX : e.clientX;
-            const y = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            if (y > canvas.height - 100) return;
-            
-            if (y < state.groundY) {
-                const activeFoods = state.foods.filter(f => f.state === 'GROUND' || f.state === 'CARRIED');
-                if (activeFoods.length < 3) {
-                    state.foods.push(new Food(x, state.groundY - 10));
-                    toast.style.opacity = 0;
-                } else {
-                    showToast("땅이 꽉 찼어요! 🙈");
-                }
-            }
-        }
-
-        buyBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); 
-            initAudio();
-            if (state.score >= 50) {
-                state.score -= 50;
-                const newAnt = new Ant();
-                state.ants.push(newAnt);
-                playSound('born');
-                updateUI();
-                
-                const q = state.rooms[state.rooms.length-1];
-                const colors = ['#FFB6C1', '#DDA0DD', '#B0E0E6', '#F0E68C', '#FFE4E1'];
-                for(let i=0;i<15;i++) {
-                    state.particles.push(new Particle(
-                        q.x + (Math.random()-0.5)*40, 
-                        q.y, 
-                        colors[Math.floor(Math.random()*colors.length)]
-                    ));
-                }
-                
-                let typeName = '귀여운 일개미';
-                let emoji = '🐜';
-                if(newAnt.type === 'SCOUT') {
-                    typeName = '날쌘 정찰병';
-                    emoji = '🏃';
-                }
-                if(newAnt.type === 'SOLDIER') {
-                    typeName = '튼튼한 병정개미';
-                    emoji = '💪';
-                }
-                showToast(`${emoji} ${typeName}가 태어났어요!`);
-            }
+      // 줄다리기 중 코믹 표정
+      if (this.grappler && this.state === 'ATTACKING') {
+        const sweat = (Math.sin(this.tugPhase) > 0) ? '💦' : '😤';
+        drawEmoji(ctx, sweat, 0, -this.size*0.6, 22, {
+          alpha: 0.9,
+          shadowBlur: 10,
+          shadowColor: 'rgba(255,255,255,0.8)',
+          fillStyle: '#000'
         });
+      }
 
-        window.addEventListener('resize', resize);
-        resize();
-        
-        for(let i=0; i<5; i++) state.ants.push(new Ant());
-        
-        requestAnimationFrame(gameLoop);
-    </script>
+      ctx.restore();
+    }
+  }
+
+  class Food {
+    constructor(x, y) {
+      this.x = x;
+      this.y = -50;
+      this.targetY = y;
+      this.type = TREATS[Math.floor(Math.random() * TREATS.length)];
+      this.state = 'FALLING';
+      this.carrier = null;
+      this.decayTime = 0;
+      this.maxDecayTime = 12000;
+      this.rotation = 0;
+      this.bounceY = 0;
+    }
+    update(dt) {
+      if (this.state === 'FALLING') {
+        this.y += 12;
+        this.rotation += 0.15;
+        if (this.y >= this.targetY) {
+          this.y = this.targetY;
+          this.state = 'GROUND';
+          this.rotation = 0;
+          playSound('drop');
+          const colors = ['#FFB6C1', '#FFDAB9', '#E0BBE4', '#B0E57C', '#87CEEB'];
+          for(let i=0;i<8;i++) state.particles.push(new Particle(this.x, this.y, colors[Math.floor(Math.random()*colors.length)]));
+        }
+      } else if (this.state === 'GROUND') {
+        this.bounceY = Math.sin(Date.now() * 0.005) * 3;
+      } else if (this.state === 'STORED') {
+        this.decayTime += dt;
+        if (this.decayTime >= this.maxDecayTime) return false;
+        if (Math.random() < 0.05) state.particles.push(new Particle(this.x+(Math.random()-0.5)*20, this.y, '#FFD700'));
+      }
+      return true;
+    }
+    draw(ctx) {
+      ctx.save();
+      ctx.translate(this.x, this.y + this.bounceY);
+
+      if (this.state === 'STORED') {
+        const s = 1 - (this.decayTime/this.maxDecayTime*0.8);
+        ctx.globalAlpha = 1 - (this.decayTime/this.maxDecayTime);
+        ctx.scale(s, s);
+      } else if (this.state === 'FALLING') {
+        ctx.rotate(this.rotation);
+      }
+
+      if (this.state !== 'STORED') {
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(0,0,0,0.2)';
+      }
+
+      drawEmoji(ctx, this.type, 0, 0, 36, { fillStyle: '#000' });
+
+      ctx.restore();
+    }
+  }
+
+  class Ant {
+    constructor() {
+      const spawnRoom = state.rooms[state.rooms.length - 1];
+      this.x = spawnRoom.x;
+      this.y = spawnRoom.y;
+
+      const typeRand = Math.random();
+      if (typeRand < 0.6) this.type = 'WORKER';
+      else if (typeRand < 0.9) this.type = 'SCOUT';
+      else this.type = 'SOLDIER';
+
+      if (this.type === 'WORKER') {
+        this.color = '#8B4513';
+        this.baseSpeed = 2.0 + Math.random();
+        this.size = 1.0;
+      } else if (this.type === 'SCOUT') {
+        this.color = '#FF8C69';
+        this.baseSpeed = 3.5 + Math.random();
+        this.size = 0.8;
+      } else {
+        this.color = '#DC143C';
+        this.baseSpeed = 1.6 + Math.random();
+        this.size = 1.3;
+      }
+
+      this.state = 'IDLE';
+      this.targetFood = null;
+      this.targetPos = { x: this.x, y: this.y };
+      this.patrolTimer = 0;
+      this.patrolDelay = 60 + Math.random() * 60;
+      this.wiggle = Math.random() * 10;
+      this.holdingFood = null;
+      this.angle = 0;
+
+      this.stunTimer = 0;
+      this.defendCooldown = 0;
+
+      // --- 줄다리기(C안) ---
+      this.combatState = 'NONE';    // NONE | CHASING | TUG
+      this.grappleTarget = null;    // Threat
+      this.tugTimer = 0;
+      this.tugLock = 0;
+      this.tugSide = Math.random() < 0.5 ? -1 : 1; // 좌우 성향
+      this.tugJitter = 0;
+
+      this.setRandomPatrolTarget();
+    }
+
+    setRandomPatrolTarget() {
+      if (this.type === 'SOLDIER' && Math.random() < 0.7) {
+        this.targetPos = {
+          x: state.nestEntrance.x + (Math.random()-0.5)*80,
+          y: state.nestEntrance.y + 10
+        };
+      } else if (Math.random() < 0.3 || this.type === 'SCOUT') {
+        this.targetPos = {
+          x: state.nestEntrance.x + (Math.random()-0.5)*40,
+          y: state.nestEntrance.y + 10
+        };
+      } else {
+        const room = state.rooms[Math.floor(Math.random() * state.rooms.length)];
+        this.targetPos = {
+          x: room.x + (Math.random()-0.5)*(room.w-20),
+          y: room.y + (Math.random()-0.5)*(room.h-20)
+        };
+      }
+      this.patrolDelay = 60 + Math.random() * 60;
+    }
+
+    getCurrentSpeed() {
+      if (this.stunTimer > 0) return 0;
+      return (state.weather === 'RAINY' && this.y < state.groundY) ? this.baseSpeed * 0.5 : this.baseSpeed;
+    }
+
+    moveTowards(x, y) {
+      const speed = this.getCurrentSpeed();
+      const dx = x - this.x;
+      const dy = y - this.y;
+      const dist = Math.hypot(dx, dy);
+      this.angle = Math.atan2(dy, dx);
+
+      if (dist > speed) {
+        this.x += Math.cos(this.angle) * speed;
+        this.y += Math.sin(this.angle) * speed;
+        return false;
+      } else {
+        this.x = x;
+        this.y = y;
+        return true;
+      }
+    }
+
+    startTug(threat) {
+      this.combatState = 'CHASING';
+      this.grappleTarget = threat;
+      this.tugTimer = 0;
+      this.tugLock = 0;
+      this.tugJitter = 0;
+
+      threat.grappler = this;
+
+      // 소소한 연출
+      playSound('defend');
+      if (Math.random() < 0.4) showToast('병정개미가 줄다리기 시작! 😤');
+    }
+
+    endTug(victory = false) {
+      if (this.grappleTarget) {
+        if (this.grappleTarget.grappler === this) this.grappleTarget.grappler = null;
+      }
+      this.combatState = 'NONE';
+      this.grappleTarget = null;
+      this.tugTimer = 0;
+      this.tugLock = 0;
+
+      // 승리면 살짝 파티클
+      if (victory) {
+        for (let i=0; i<6; i++) state.particles.push(new Particle(this.x, this.y, '#FFD700'));
+      }
+    }
+
+    update() {
+      this.wiggle += 0.5;
+
+      // 스턴
+      if (this.stunTimer > 0) {
+        this.stunTimer--;
+        if (this.stunTimer % 10 === 0) state.particles.push(new Particle(this.x, this.y - 10, '#FFA500'));
+        // 스턴이면 전투도 강제 종료(코믹)
+        if (this.combatState !== 'NONE') this.endTug(false);
+        return;
+      }
+
+      if (this.defendCooldown > 0) this.defendCooldown--;
+
+      // ---- 병정개미 전투 로직(C안: 줄다리기) ----
+      if (this.type === 'SOLDIER') {
+        // 이미 줄다리기 중인데 타겟이 사라졌으면 종료
+        if (this.grappleTarget) {
+          const t = this.grappleTarget;
+          if (!state.threats.includes(t) || t.state !== 'ATTACKING' || t.defended) {
+            this.endTug(false);
+          }
+        }
+
+        // 타겟 없으면 공격 중인 위협 탐색
+        if (!this.grappleTarget && this.defendCooldown === 0) {
+          const candidates = state.threats.filter(t =>
+            t.state === 'ATTACKING' &&
+            !t.defended &&
+            !t.grappler // 이미 다른 병정이 잡고 있지 않은 것
+          );
+          if (candidates.length > 0) {
+            // 가장 가까운 놈
+            candidates.sort((a,b) =>
+              Math.hypot(a.x - this.x, a.y - this.y) - Math.hypot(b.x - this.x, b.y - this.y)
+            );
+            const target = candidates[0];
+            const d = Math.hypot(target.x - this.x, target.y - this.y);
+            if (d < TUG.START_RANGE) {
+              this.startTug(target);
+              this.defendCooldown = 30; // 너무 자주 타겟 바꾸지 않게
+            }
+          }
+        }
+
+        // 줄다리기 진행
+        if (this.grappleTarget) {
+          const t = this.grappleTarget;
+          const dist = Math.hypot(t.x - this.x, t.y - this.y);
+
+          // 먼저 붙으러 감
+          if (this.combatState === 'CHASING') {
+            // 위협 머리 쪽에 달라붙는 느낌
+            const tx = t.x - 25;
+            const ty = t.y + 5;
+            this.moveTowards(tx, ty);
+
+            if (dist < TUG.SNAP_RANGE) {
+              this.combatState = 'TUG';
+              this.tugLock = TUG.LOCK_MIN_FRAMES;
+              this.tugTimer = 0;
+              this.tugJitter = Math.random() * 10;
+              // 코믹 파티클
+              for (let i=0; i<4; i++) state.particles.push(new Particle(this.x, this.y, '#FFD700'));
+            }
+          }
+          else if (this.combatState === 'TUG') {
+            this.tugTimer++;
+            if (this.tugLock > 0) this.tugLock--;
+
+            // 줄다리기 중에도 살짝 붙어있게(떨어지면 다시 붙기)
+            if (dist > TUG.SNAP_RANGE + 25) {
+              this.combatState = 'CHASING';
+              return;
+            }
+
+            // 일정 주기마다 데미지
+            if (this.tugTimer % TUG.DAMAGE_EVERY_FRAMES === 0) {
+              t.takeDamage();
+              // 데미지 주면 코믹 이펙트
+              for (let i=0; i<3; i++) state.particles.push(new Particle(t.x, t.y, '#FFFFFF'));
+            }
+
+            // 줄다리기 최소 시간 끝났고, 위협이 아직 살아있으면 확률적으로 놓칠 수도(코믹)
+            if (this.tugLock <= 0 && Math.random() < 0.01) {
+              this.endTug(false);
+            }
+
+            // 줄다리기 중엔 큰 이동은 하지 않게(고정)
+            this.angle = Math.atan2(t.y - this.y, t.x - this.x);
+          }
+
+          return; // 병정개미는 전투 중엔 일반 행동(음식/순찰) 안 함
+        }
+      }
+
+      // ---- 일반 행동(기존 로직) ----
+      if (this.state === 'IDLE') {
+        const target = state.foods.find(f => f.state === 'GROUND' && !f.carrier);
+        if (target && this.type !== 'SOLDIER') {
+          target.carrier = this;
+          this.targetFood = target;
+          this.state = 'SEEKING';
+          this.patrolTimer = 0;
+        } else {
+          const distToTarget = Math.hypot(this.targetPos.x - this.x, this.targetPos.y - this.y);
+          if (distToTarget < 5) {
+            this.patrolTimer++;
+            if (this.patrolTimer >= this.patrolDelay) {
+              this.setRandomPatrolTarget();
+              this.patrolTimer = 0;
+            }
+          } else {
+            this.moveTowards(this.targetPos.x, this.targetPos.y);
+            this.patrolTimer = 0;
+          }
+        }
+      }
+      else if (this.state === 'SEEKING') {
+        if (!this.targetFood || this.targetFood.state !== 'GROUND') {
+          this.state = 'IDLE';
+          this.targetFood = null;
+          this.setRandomPatrolTarget();
+          return;
+        }
+        if (this.y > state.groundY + 5) {
+          this.moveTowards(state.nestEntrance.x, state.nestEntrance.y);
+        } else {
+          if (this.moveTowards(this.targetFood.x, this.targetFood.y)) {
+            this.targetFood.state = 'CARRIED';
+            this.holdingFood = this.targetFood;
+            this.state = 'RETURNING';
+            const storage = state.rooms[Math.floor(Math.random() * (state.rooms.length-1))];
+            this.targetPos = { x: storage.x + (Math.random()-0.5)*60, y: storage.y };
+          }
+        }
+      }
+      else if (this.state === 'RETURNING') {
+        if (!this.holdingFood) {
+          this.state = 'IDLE';
+          this.setRandomPatrolTarget();
+          return;
+        }
+        this.holdingFood.x = this.x;
+        this.holdingFood.y = this.y - 20;
+
+        if (this.y < state.groundY && Math.abs(this.x - state.nestEntrance.x) > 5) {
+          this.moveTowards(state.nestEntrance.x, state.nestEntrance.y);
+        } else {
+          if (this.moveTowards(this.targetPos.x, this.targetPos.y)) {
+            this.holdingFood.state = 'STORED';
+            this.holdingFood = null;
+            this.targetFood = null;
+            this.state = 'IDLE';
+            this.setRandomPatrolTarget();
+            playSound('collect');
+          }
+        }
+      }
+    }
+
+    draw(ctx) {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      // 스턴 이펙트
+      if (this.stunTimer > 0) drawEmoji(ctx, '💫', 0, -25, 20, { fillStyle: '#000' });
+
+      // 줄다리기 중 코믹 이펙트(😤💦)를 개미 위에
+      if (this.type === 'SOLDIER' && this.grappleTarget && this.combatState === 'TUG') {
+        const t = this.grappleTarget;
+        const phase = t.tugPhase + this.tugJitter;
+        const face = (Math.sin(phase) > 0) ? '😤' : '💦';
+        drawEmoji(ctx, face, 0, -28, 18, {
+          alpha: 0.95,
+          shadowBlur: 10,
+          shadowColor: 'rgba(255,255,255,0.8)',
+          fillStyle: '#000'
+        });
+      }
+
+      if (Math.abs(this.angle) > Math.PI/2) ctx.scale(-1, 1);
+      ctx.scale(this.size, this.size);
+
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      const legWiggle = Math.sin(this.wiggle) * 4;
+
+      // 줄다리기 중엔 다리 떨림 더 크게(코믹)
+      const tugBoost = (this.type === 'SOLDIER' && this.grappleTarget && this.combatState === 'TUG') ? 1.8 : 1.0;
+
+      ctx.beginPath();
+      ctx.moveTo(3, 2); ctx.lineTo(7 + legWiggle*tugBoost, 8);
+      ctx.moveTo(-3, 2); ctx.lineTo(-7 - legWiggle*tugBoost, 8);
+      ctx.moveTo(1, 0); ctx.lineTo(5 + legWiggle*tugBoost, 5);
+      ctx.moveTo(-1, 0); ctx.lineTo(-5 - legWiggle*tugBoost, 5);
+      ctx.stroke();
+
+      ctx.fillStyle = this.color;
+
+      if (this.type === 'SOLDIER') {
+        ctx.beginPath(); ctx.arc(6, -3, 6, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath(); ctx.arc(7, -5, 2, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = this.color;
+
+        ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-5, 0, 4.5, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = 'white';
+        ctx.beginPath(); ctx.arc(7, -4, 1.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'black';
+        ctx.beginPath(); ctx.arc(7.5, -4, 0.8, 0, Math.PI*2); ctx.fill();
+      }
+      else if (this.type === 'SCOUT') {
+        ctx.beginPath(); ctx.arc(5, -2, 3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath(); ctx.arc(6, -3, 1.2, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = this.color;
+
+        ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-4, 0, 3.5, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = 'white';
+        ctx.beginPath(); ctx.arc(6, -3, 1.2, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'black';
+        ctx.beginPath(); ctx.arc(6.3, -3, 0.6, 0, Math.PI*2); ctx.fill();
+      }
+      else {
+        ctx.beginPath(); ctx.arc(5, -2, 3.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath(); ctx.arc(6, -3.5, 1.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = this.color;
+
+        ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-5, 0, 4, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = 'white';
+        ctx.beginPath(); ctx.arc(6, -3, 1.3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'black';
+        ctx.beginPath(); ctx.arc(6.4, -3, 0.7, 0, Math.PI*2); ctx.fill();
+      }
+
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(5, -4);
+      ctx.quadraticCurveTo(8, -8, 9, -7);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+
+  // --- 위협 시스템 ---
+  function spawnThreat() {
+    const soldierCount = state.ants.filter(a => a.type === 'SOLDIER').length;
+    const threatChance = Math.max(0.3, 0.7 - (soldierCount * 0.1));
+    if (Math.random() > threatChance) return;
+
+    const types = ['ANTEATER','SPIDER','BIRD'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    state.threats.push(new Threat(type));
+  }
+
+  function handleThreatDamage(threat) {
+    if (threat.defended) return;
+
+    const soldierCount = state.ants.filter(a => a.type === 'SOLDIER').length;
+
+    // 병정개미 기본 피해 감소 + 줄다리기(붙잡힘)면 추가 감소
+    const baseReduction = Math.min(0.7, soldierCount * 0.2);
+    const tugBonus = threat.grappler ? 0.25 : 0; // 붙잡히면 더 안전
+    const damageReduction = Math.min(0.85, baseReduction + tugBonus);
+
+    // 음식 훔치기(줄다리기면 더 못 훔침)
+    const groundFoods = state.foods.filter(f => f.state === 'GROUND');
+    if (groundFoods.length > 0 && Math.random() > damageReduction) {
+      const stolen = groundFoods[Math.floor(Math.random() * groundFoods.length)];
+      state.foods = state.foods.filter(f => f !== stolen);
+      for(let i=0; i<10; i++) state.particles.push(new Particle(stolen.x, stolen.y, '#FF6B6B'));
+    }
+
+    // 점수 피해
+    const scoreLoss = Math.floor(10 * (1 - damageReduction));
+    state.score = Math.max(0, state.score - scoreLoss);
+
+    // 개미 스턴(줄다리기면 스턴 확률도 더 낮아짐)
+    const stunDuration = Math.floor(120 * (1 - damageReduction));
+    const stunChance = threat.grappler ? 0.12 : 0.3;
+    state.ants.forEach(ant => {
+      if (ant.type !== 'SOLDIER' && Math.random() < stunChance) ant.stunTimer = stunDuration;
+    });
+
+    updateUI();
+  }
+
+  function showThreatWarning(msg) {
+    threatWarning.innerText = msg;
+    threatWarning.style.opacity = 1;
+    setTimeout(() => { threatWarning.style.opacity = 0; }, 2000);
+  }
+
+  // --- 날씨/시간 ---
+  function updateWeather(dt) {
+    state.weatherTimer += dt / 1000;
+    if (state.weatherTimer > state.weatherDuration) {
+      state.weatherTimer = 0;
+      state.isNight = !state.isNight;
+
+      const rand = Math.random();
+      if (rand < 0.4) state.weather = 'SUNNY';
+      else if (rand < 0.7) state.weather = 'RAINY';
+      else if (rand < 0.9) state.weather = 'CLOUDY';
+      else state.weather = 'SNOWY';
+
+      if (state.isNight) {
+        state.targetSkyColor = { r: 44, g: 62, b: 80 };
+        showToast(state.weather === 'RAINY' ? "밤비가 내려요 🌧️" : "별이 반짝여요 ✨");
+      } else {
+        if (state.weather === 'RAINY' || state.weather === 'CLOUDY') state.targetSkyColor = { r: 169, g: 169, b: 169 };
+        else state.targetSkyColor = { r: 176, g: 224, b: 230 };
+        showToast("좋은 아침이에요! ☀️");
+      }
+
+      state.weatherParticles = [];
+      if (state.weather === 'RAINY') {
+        for(let i=0; i<50; i++) state.weatherParticles.push(new WeatherParticle('RAINY'));
+        weatherIcon.innerText = '🌧️';
+      } else if (state.weather === 'SNOWY') {
+        for(let i=0; i<40; i++) state.weatherParticles.push(new WeatherParticle('SNOWY'));
+        weatherIcon.innerText = '❄️';
+      } else if (state.weather === 'CLOUDY') {
+        weatherIcon.innerText = '☁️';
+      } else {
+        weatherIcon.innerText = state.isNight ? '🌙' : '☀️';
+      }
+
+      if (state.isNight && state.weather === 'SUNNY') {
+        for(let i=0; i<15; i++) state.weatherParticles.push(new WeatherParticle('NIGHT_FLY'));
+      }
+    }
+
+    const speed = 0.01;
+    state.skyColor.r += (state.targetSkyColor.r - state.skyColor.r) * speed;
+    state.skyColor.g += (state.targetSkyColor.g - state.skyColor.g) * speed;
+    state.skyColor.b += (state.targetSkyColor.b - state.skyColor.b) * speed;
+
+    state.threatTimer += dt / 1000;
+    if (state.threatTimer > state.threatInterval) {
+      state.threatTimer = 0;
+      spawnThreat();
+    }
+  }
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    state.groundY = canvas.height * 0.35;
+    state.nestEntrance = { x: canvas.width/2, y: state.groundY };
+    const cx = canvas.width/2;
+    const h = canvas.height - state.groundY;
+    state.rooms = [
+      { x: cx-100, y: state.groundY + h*0.25, w: 100, h: 60 },
+      { x: cx+100, y: state.groundY + h*0.35, w: 100, h: 60 },
+      { x: cx-80, y: state.groundY + h*0.55, w: 120, h: 70 },
+      { x: cx+80, y: state.groundY + h*0.65, w: 120, h: 70 },
+      { x: cx, y: state.groundY + h*0.9, w: 180, h: 80 }
+    ];
+  }
+
+  function drawEnvironment() {
+    const c = state.skyColor;
+    const gradient = ctx.createLinearGradient(0, 0, 0, state.groundY);
+    gradient.addColorStop(0, `rgb(${Math.floor(c.r)}, ${Math.floor(c.g)}, ${Math.floor(c.b)})`);
+    gradient.addColorStop(1, `rgb(${Math.floor(c.r*0.9)}, ${Math.floor(c.g*0.9)}, ${Math.floor(c.b*0.9)})`);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, state.groundY);
+
+    ctx.fillStyle = '#D2B48C';
+    ctx.fillRect(0, state.groundY, canvas.width, canvas.height);
+
+    const grassGradient = ctx.createLinearGradient(0, state.groundY - 15, 0, state.groundY);
+    grassGradient.addColorStop(0, state.isNight ? '#7CB342' : '#9CCC65');
+    grassGradient.addColorStop(1, state.isNight ? '#558B2F' : '#7CB342');
+    ctx.fillStyle = grassGradient;
+    ctx.fillRect(0, state.groundY - 15, canvas.width, 15);
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const cx = canvas.width/2;
+    ctx.beginPath();
+    ctx.moveTo(cx, state.groundY);
+    ctx.lineTo(cx, canvas.height - 50);
+    state.rooms.forEach(r => {
+      ctx.moveTo(cx, r.y);
+      ctx.lineTo(r.x, r.y);
+    });
+    ctx.lineWidth = 18;
+    ctx.strokeStyle = '#A0826D';
+    ctx.stroke();
+
+    state.rooms.forEach(r => {
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.beginPath();
+      ctx.ellipse(r.x+2, r.y+2, r.w/2, r.h/2, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle = '#A0826D';
+      ctx.beginPath();
+      ctx.ellipse(r.x, r.y, r.w/2, r.h/2, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#8B7355';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    });
+
+    ctx.restore();
+
+    const q = state.rooms[state.rooms.length-1];
+    drawEmoji(ctx, '👑', q.x, q.y + 5, 50, {
+      shadowBlur: 10,
+      shadowColor: 'rgba(255,215,0,0.5)',
+      fillStyle: '#000'
+    });
+  }
+
+  function showToast(msg) {
+    toast.innerText = msg;
+    toast.style.opacity = 1;
+    setTimeout(() => { toast.style.opacity = 0; }, 2500);
+  }
+
+  // --- 줄다리기 라인(끈) 그리기 ---
+  function drawTugLines() {
+    const soldiers = state.ants.filter(a => a.type === 'SOLDIER' && a.grappleTarget && a.combatState === 'TUG');
+    if (soldiers.length === 0) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+
+    soldiers.forEach(s => {
+      const t = s.grappleTarget;
+      if (!t || t.state !== 'ATTACKING' || t.defended) return;
+
+      // 위협의 페이즈로 줄이 흔들리게
+      const phase = t.tugPhase + s.tugJitter;
+      const wiggle = Math.sin(phase) * 4;
+
+      const x1 = s.x;
+      const y1 = s.y - 6;
+      const x2 = t.x - 10;
+      const y2 = t.y + 10;
+
+      // 굵기/색
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = 'rgba(255,255,255,0.7)';
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      // 중간점으로 살짝 휘게(줄 느낌)
+      const mx = (x1 + x2) * 0.5;
+      const my = (y1 + y2) * 0.5 + wiggle;
+      ctx.quadraticCurveTo(mx, my, x2, y2);
+      ctx.stroke();
+
+      // 매듭(🍬처럼 보이게) 작은 포인트
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,182,193,0.9)';
+      ctx.beginPath();
+      ctx.arc(mx, my, 4, 0, Math.PI*2);
+      ctx.fill();
+
+      // 코믹 효과 이모지(줄 위)
+      const fx = mx;
+      const fy = my - 18;
+      const fxEmoji = (Math.sin(phase) > 0) ? '💥' : '⚡';
+      drawEmoji(ctx, fxEmoji, fx, fy, 18, {
+        alpha: 0.6,
+        shadowBlur: 10,
+        shadowColor: 'rgba(255,215,0,0.9)',
+        fillStyle: '#000'
+      });
+
+      // 실제 줄다리기 느낌을 위해: 양쪽이 미세하게 밀고 당기는 "시각적" 흔들림(좌표 자체는 바꾸지 않음)
+      // (물리적으로 이동시키면 길찾기/충돌이 꼬일 수 있어서 draw에서만 보여주는 방식)
+    });
+
+    ctx.restore();
+  }
+
+  function updateUI() {
+    scoreEl.innerText = Math.floor(state.score);
+    antCountEl.innerText = state.ants.length;
+    soldierCountEl.innerText = state.ants.filter(a => a.type === 'SOLDIER').length;
+
+    if (state.score >= 50) {
+      buyBtn.disabled = false;
+      buyBtn.innerText = "🐜 새 개미 부화하기 (사탕 50개)";
+    } else {
+      buyBtn.disabled = true;
+      buyBtn.innerText = `사탕 모으는 중... (${Math.floor(state.score)}/50)`;
+    }
+  }
+
+  function gameLoop(timestamp) {
+    const dt = timestamp - state.lastTime;
+    state.lastTime = timestamp;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    updateWeather(dt);
+    drawEnvironment();
+
+    state.weatherParticles.forEach(p => { p.update(); p.draw(ctx); });
+
+    state.foods = state.foods.filter(f => {
+      const alive = f.update(dt);
+      if (!alive) {
+        state.score += 15;
+        updateUI();
+        for(let i=0; i<10; i++) state.particles.push(new Particle(f.x, f.y, '#FFD700'));
+      }
+      f.draw(ctx);
+      return alive;
+    });
+
+    // 위협 업데이트 + 공격 피해
+    state.threats = state.threats.filter(threat => {
+      const alive = threat.update(dt);
+
+      // 공격 중일 때 주기적으로 피해(줄다리기면 감소는 handleThreatDamage 안에서 처리)
+      if (threat.state === 'ATTACKING' && !threat.defended) {
+        if (Math.floor(threat.attackTimer) % 1000 < 20) handleThreatDamage(threat);
+      }
+
+      threat.draw(ctx);
+      return alive;
+    });
+
+    // 개미 업데이트
+    state.ants.forEach(a => a.update());
+
+    // 줄다리기 줄은 "개미/위협 사이"라서 중간 레이어로
+    drawTugLines();
+
+    // 개미 그리기
+    state.ants.forEach(a => a.draw(ctx));
+
+    // 파티클
+    state.particles = state.particles.filter(p => {
+      p.update();
+      p.draw(ctx);
+      return p.life > 0;
+    });
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  // --- 입력 ---
+  canvas.addEventListener('touchstart', handleInput, { passive: false });
+  canvas.addEventListener('mousedown', handleInput);
+
+  function handleInput(e) {
+    e.preventDefault();
+    initAudio();
+
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+    if (y > canvas.height - 100) return;
+
+    if (y < state.groundY) {
+      const activeFoods = state.foods.filter(f => f.state === 'GROUND' || f.state === 'CARRIED');
+      if (activeFoods.length < 3) {
+        state.foods.push(new Food(x, state.groundY - 10));
+        toast.style.opacity = 0;
+      } else {
+        showToast("땅이 꽉 찼어요! 🙈");
+      }
+    }
+  }
+
+  buyBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    initAudio();
+
+    if (state.score >= 50) {
+      state.score -= 50;
+      const newAnt = new Ant();
+      state.ants.push(newAnt);
+      playSound('born');
+      updateUI();
+
+      const q = state.rooms[state.rooms.length-1];
+      const colors = ['#FFB6C1', '#DDA0DD', '#B0E0E6', '#F0E68C', '#FFE4E1'];
+      for(let i=0;i<15;i++) {
+        state.particles.push(new Particle(
+          q.x + (Math.random()-0.5)*40,
+          q.y,
+          colors[Math.floor(Math.random()*colors.length)]
+        ));
+      }
+
+      let typeName = '귀여운 일개미';
+      let emoji = '🐜';
+      if(newAnt.type === 'SCOUT') { typeName = '날쌘 정찰병'; emoji = '🏃'; }
+      if(newAnt.type === 'SOLDIER') { typeName = '튼튼한 병정개미'; emoji = '💪'; }
+      showToast(`${emoji} ${typeName}가 태어났어요!`);
+    }
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  for(let i=0; i<5; i++) state.ants.push(new Ant());
+  updateUI();
+  requestAnimationFrame(gameLoop);
+</script>
 </body>
 </html>
