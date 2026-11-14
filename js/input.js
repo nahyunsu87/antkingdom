@@ -54,6 +54,7 @@ async function createCamera(video, onStatus) {
 // P2: ←/→ 이동, ↓ 앉기, ↑ 점프, ,/. 무릎
 // ?bot=1 이면 자동으로 움직인다.
 function createSim(bot) {
+  const solo = new URLSearchParams(location.search).has('solo'); // ?solo = 가짜 플레이어 1명만
   const keys = {}; let mouse = null, t = 0, last = performance.now();
   addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -68,7 +69,7 @@ function createSim(bot) {
     frame(W, H) {
       const now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
       const asp = H / W;
-      const poses = P.map((o, i) => {
+      const poses = (solo ? P.slice(0, 1) : P).map((o, i) => {
         const k = map[i];
         let crouch = keys[k.down] ? 1 : 0, jump = keys[k.up] ? 1 : 0, knee = [keys[k.k1] ? 1 : 0, keys[k.k2] ? 1 : 0], hands = [null, null];
         if (keys[k.l]) o.x -= dt * 0.35;

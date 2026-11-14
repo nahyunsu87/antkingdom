@@ -2,7 +2,7 @@
 // 제미나이 그림은 배경이 투명하지 않으므로, 네 귀퉁이가 같은 단색이면 그 색을 자동으로 투명 처리한다.
 // 새 그림을 쓰려면: KEYS 에 이름 추가 → assets/이름.png 저장 → ctx.sprite('이름', '🙂', x, y, size)
 
-export const KEYS = ['target', 'bomb', 'star', 'rock', 'runner_p1', 'runner_p2', 'icon_punch', 'icon_squat', 'icon_run', 'icon_catch', 'flag'];
+export const KEYS = ['bubble', 'star', 'ant', 'home', 'pose_up', 'pose_small', 'pose_wide', 'icon_bubble', 'icon_catch', 'icon_ant', 'icon_copy'];
 const images = {};
 
 export function loadAssets() {
