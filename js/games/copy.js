@@ -1,10 +1,16 @@
-// 따라 해봐 — 큰 동작(만세·웅크리기·팔 벌리기). 말과 그림으로 동작을 알려 주고, 하면 칭찬. 못 해도 그냥 다음으로 넘어간다.
+// 따라 해봐 — 큰 동작(만세·웅크리기·팔 벌리기·한 발 들기·별 모양). 말과 그림으로 동작을 알려 주고, 하면 칭찬. 못 해도 그냥 다음으로 넘어간다.
 const POSES = [
   { key: 'pose_up', emoji: '🙌', test: p => p.hands.every(h => h.y < p.nose.y) },
   { key: 'pose_small', emoji: '🐸', test: (p, ref) =>
       (p.knees.every(k => k.v > 0.5) && (Math.min(p.knees[0].y, p.knees[1].y) - p.hip.y) / p.torso < 0.4) || p.nose.y > ref + p.torso * 0.5 },
   { key: 'pose_wide', emoji: '✈️', test: p =>
       Math.abs(p.hands[0].x - p.hands[1].x) > p.sw * 3 && p.hands.every(h => Math.abs(h.y - p.shoulder.y) < p.torso * 0.6) },
+  { key: 'pose_one', emoji: '🦩', test: p => // 한쪽 무릎(또는 발목)이 다른 쪽보다 확실히 높다
+      (p.knees.every(k => k.v > 0.4) && Math.abs(p.knees[0].y - p.knees[1].y) > p.torso * 0.3) ||
+      (p.ankles.every(a => a.v > 0.4) && Math.abs(p.ankles[0].y - p.ankles[1].y) > p.torso * 0.35) },
+  { key: 'pose_star', emoji: '⭐', test: p => // 팔은 어깨 위로 넓게. 발이 보이면 다리도 벌려야
+      Math.abs(p.hands[0].x - p.hands[1].x) > p.sw * 2.5 && p.hands.every(h => h.y < p.shoulder.y) &&
+      (p.ankles.some(a => a.v < 0.4) || Math.abs(p.ankles[0].x - p.ankles[1].x) > p.sw * 1.3) },
 ];
 const WAIT = 6; // 한 동작을 기다려 주는 시간(초)
 export default {

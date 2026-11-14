@@ -1,18 +1,17 @@
-// 그림 슬롯. assets/<key>.png 가 있으면 그 그림을, 없으면 이모지를 그린다.
+// 그림: assets/<key>.png 가 있으면 그 그림을, 없으면 이모지를 그린다.
+// 키는 처음 그려질 때 알아서 불러오므로 목록을 따로 관리하지 않는다. 쓰는 키 목록은 assets/README.md.
 // 제미나이 그림은 배경이 투명하지 않으므로, 네 귀퉁이가 같은 단색이면 그 색을 자동으로 투명 처리한다.
-// 새 그림을 쓰려면: KEYS 에 이름 추가 → assets/이름.png 저장 → ctx.sprite('이름', '🙂', x, y, size)
 
-export const KEYS = ['bubble', 'star', 'ant', 'home', 'pose_up', 'pose_small', 'pose_wide', 'icon_bubble', 'icon_catch', 'icon_ant', 'icon_copy'];
-const images = {};
-
-export function loadAssets() {
-  for (const key of KEYS) {
-    const img = new Image();
-    img.onload = () => { images[key] = chromaKey(img); };
-    img.onerror = () => {}; // 없으면 이모지로 대체
-    img.src = `assets/${key}.png`;
-  }
+const images = {}, tried = new Set();
+function load(key) {
+  tried.add(key);
+  const img = new Image();
+  img.onload = () => { images[key] = chromaKey(img); };
+  img.onerror = () => {}; // 없으면 이모지로 대체
+  img.src = `assets/${key}.png`;
 }
+export function preload(keys) { for (const k of keys) if (!tried.has(k)) load(k); }
+export const hasImage = key => !!images[key];
 
 function chromaKey(img) {
   try {
@@ -33,6 +32,7 @@ function chromaKey(img) {
 }
 
 export function sprite(g, key, emoji, x, y, size) {
+  if (!tried.has(key)) load(key);
   const im = images[key];
   if (im) { g.drawImage(im, x - size / 2, y - size / 2, size, size); return; }
   g.save(); g.font = `${size * 0.86}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';

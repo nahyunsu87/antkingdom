@@ -1,16 +1,16 @@
 // 진행 흐름: boot → menu → ready(카메라 앞에 서기) → count(3·2·1) → play → result
 // 놀이 로직은 js/games/*.js 에만 있다. 여기는 공통 틀(메뉴, 남은 시간, 별 개수, 칭찬 화면)만 담당.
-// 대상은 만 3~4세: 실패·감점·승패·글자 의존이 없어야 한다. 안내는 say() 음성으로.
+// 대상은 만 4세(글을 못 읽음): 실패·감점·승패·글자가 없어야 한다. 안내는 say() 음성으로.
+// 버튼은 모두 터치 전용(어른이 누른다). 놀이 중 아이는 몸으로만 조작한다.
 import { createInput } from './input.js';
 import { Players, drawSkeleton } from './players.js';
 import { sfx, say, loadVoice, unlockAudio } from './audio.js';
-import { loadAssets, sprite } from './assets.js';
+import { preload, sprite, hasImage } from './assets.js';
 import { GAMES } from './games/index.js';
 
 const q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
 const cv = $('stage'), g = cv.getContext('2d');
-const DWELL = 1.0; // 손을 올려두면 선택되는 시간(초). 아이에겐 어려우니 어른이 터치로 고르는 것이 기본
 
 let W = 0, H = 0, u = 1;
 function resize() {
@@ -23,7 +23,6 @@ addEventListener('resize', resize); resize();
 const players = new Players();
 let input = null;
 const S = { name: 'boot', t: 0, game: null, gs: null, ctx: null, tap: null, hold: 0, lastSec: 0, lostT: 0, pops: [], parts: [] };
-let dwell = {};
 cv.addEventListener('pointerdown', e => { S.tap = { x: e.clientX, y: e.clientY }; unlockAudio(); });
 
 // ── 그리기 도우미 ────────────────────────────────────────────────────────
@@ -52,71 +51,72 @@ function touching(x, y, r, body = false) {
   }
   return null;
 }
-function burst(x, y, color) {
-  for (let i = 0; i < 10; i++) { const a = Math.random() * 7, v = u * (20 + Math.random() * 30); S.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, color }); }
+// 터지는 알갱이. n=개수, spd=퍼지는 속도 배율, life=사라지는 시간(초)
+function burst(x, y, color, n = 10, spd = 1, life = 0.5) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 7, v = u * (20 + Math.random() * 30) * spd;
+    S.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, life, color });
+  }
+  if (S.parts.length > 600) S.parts.splice(0, S.parts.length - 600);
+}
+function drawParts(dt) {
+  S.parts = S.parts.filter(p => (p.t += dt) < p.life);
+  for (const p of S.parts) {
+    g.globalAlpha = 1 - p.t / p.life; g.fillStyle = p.color;
+    g.beginPath(); g.arc(p.x + p.vx * p.t, p.y + p.vy * p.t, u * 1.1, 0, 7); g.fill();
+  }
+  g.globalAlpha = 1;
 }
 
-// ── 손으로 누르는 버튼 ───────────────────────────────────────────────────
-// 손이 가슴 위로 올라왔을 때만 커서로 인정(내린 손이 버튼을 건드리는 오작동 방지). 터치는 즉시 선택.
-function cursors() {
-  const out = [];
-  for (const p of present()) for (const h of p.hands) if (h.y < p.shoulder.y + p.torso * 0.6) out.push({ x: h.x, y: h.y, color: p.color });
-  return out;
-}
-function runButtons(btns, dt) {
-  const cs = cursors();
+// ── 버튼(터치 전용) ──────────────────────────────────────────────────────
+function buttons(btns) {
   let fired = null;
   for (const b of btns) {
-    const hot = cs.some(c => inside(c, b));
-    let p = hot ? (dwell[b.id] || 0) + dt / DWELL : Math.max(0, (dwell[b.id] || 0) - dt * 2);
-    if (S.tap && inside(S.tap, b)) p = 1;
-    dwell[b.id] = p;
-    if (p >= 1 && !fired) fired = b;
-    g.save();
-    rrect(b.x, b.y, b.w, b.h, u * 3);
-    g.fillStyle = hot ? 'rgba(255,255,255,.34)' : 'rgba(255,255,255,.16)'; g.fill();
+    if (S.tap && inside(S.tap, b) && !fired) fired = b;
+    rrect(b.x, b.y, b.w, b.h, Math.min(b.w, b.h) * 0.14);
+    g.fillStyle = 'rgba(255,255,255,.16)'; g.fill();
     g.lineWidth = u * 0.7; g.strokeStyle = b.color || '#fff'; g.stroke();
-    if (p > 0 && p < 1) { g.clip(); g.fillStyle = 'rgba(255,210,63,.55)'; g.fillRect(b.x, b.y + b.h * (1 - p), b.w, b.h * p); }
-    g.restore();
-    const cx = b.x + b.w / 2;
-    if (b.icon) {
-      sprite(g, b.icon[0], b.icon[1], cx, b.y + b.h * 0.5, b.h * 0.62);
-    } else text(b.label, cx, b.y + b.h / 2, b.big ? b.h * 0.55 : Math.min(b.h * 0.42, b.w * 0.16));
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    if (b.icon) sprite(g, b.icon[0], b.icon[1], cx, cy, Math.min(b.w, b.h) * 0.8);
+    else text(b.label, cx, cy, Math.min(b.w, b.h) * 0.55);
   }
-  for (const c of cs) { g.beginPath(); g.arc(c.x, c.y, u * 2.4, 0, 7); g.fillStyle = c.color; g.fill(); g.lineWidth = u * 0.6; g.strokeStyle = '#fff'; g.stroke(); }
-  if (fired) { dwell = {}; sfx.select(); fired.on(); }
+  if (fired) { sfx.select(); fired.on(); }
 }
 
 // ── 상태 전환 ────────────────────────────────────────────────────────────
-function go(name) { S.name = name; S.t = 0; S.hold = 0; S.lastSec = 0; dwell = {}; if (name === 'menu') say('menu'); }
-function startGame(game) { S.game = game; go('ready'); say(game.id); }
+function go(name) { S.name = name; S.t = 0; S.hold = 0; S.lastSec = 0; if (name === 'menu') say('menu'); }
+function startGame(game) { S.game = game; go('ready'); say(game.id, true); }
 function beginPlay() {
   const game = S.game;
   S.pops = []; S.parts = []; S.lostT = 0;
   const c = S.ctx = {
     get W() { return W; }, get H() { return H; }, get u() { return u; },
-    players: players.list, present, touching, score: 0, t: 0, dur: game.duration, sfx, say, text,
+    players: players.list, present, touching, score: 0, t: 0, dur: game.duration, sfx, say, text, hasImage,
     sprite: (key, emoji, x, y, size) => sprite(g, key, emoji, x, y, size),
     add(n, x, y, color = '#ffd23f') { c.score += n; S.pops.push({ x, y, str: '⭐', t: 0 }); burst(x, y, color); },
+    fx: burst, // 점수 없이 알갱이만
   };
   S.gs = game.start(c);
   go('play'); sfx.go();
 }
 
 // ── 화면별 처리 ──────────────────────────────────────────────────────────
-function menu(dt) {
-  dim(0.5);
-  text('🐜', W / 2, u * 10, u * 11);
-  const bw = Math.min(W * 0.21, u * 40), gap = (W - bw * 4) / 5, btns = [];
-  GAMES.forEach((gm, i) => btns.push({ id: gm.id, x: gap + i * (bw + gap), y: u * 20, w: bw, h: u * 56, color: gm.color,
-    icon: ['icon_' + gm.id, gm.emoji], label: gm.title, on: () => startGame(gm) }));
-  btns.push({ id: 'flip', x: W - u * 15, y: u * 2.5, w: u * 12, h: u * 10, label: '🔄', big: 1, on: () => input.flip().catch(console.warn) });
-  for (const p of players.list) drawSkeleton(g, p, 0.55);
-  runButtons(btns, dt);
+function menu() {
+  dim(0.55);
+  text('🐜', W / 2, u * 8, u * 10);
+  const cols = 8, rows = Math.ceil(GAMES.length / cols), gap = Math.min(W * 0.012, u * 2.2);
+  const top = u * 17, cw = (W - gap * (cols + 1)) / cols, ch = Math.min((H - top - gap * (rows + 1)) / rows, cw * 1.25);
+  const y0 = top + (H - top - (ch + gap) * rows - gap) / 2;
+  const btns = GAMES.map((gm, i) => ({
+    x: gap + (i % cols) * (cw + gap), y: y0 + gap + Math.floor(i / cols) * (ch + gap), w: cw, h: ch,
+    color: gm.color, icon: ['icon_' + gm.id, gm.emoji], on: () => startGame(gm),
+  }));
+  btns.push({ x: W - u * 14, y: u * 2, w: u * 12, h: u * 11, label: '🔄', on: () => input.flip().catch(console.warn) });
+  buttons(btns);
 }
 function ready(dt) {
   dim(0.35);
-  sprite(g, 'icon_' + S.game.id, S.game.emoji, W / 2, u * 16, u * 22);
+  sprite(g, 'icon_' + S.game.id, S.game.emoji, W / 2, u * 18, u * 26);
   for (const p of players.list) drawSkeleton(g, p);
   const n = present().length;
   text(n ? '👍' : '👀', W / 2, u * 86, u * 12);
@@ -137,13 +137,12 @@ function hud(dt) {
   rrect(W / 2 - bw / 2, u * 4.5, bw, u * 3.5, u * 1.7); g.fillStyle = 'rgba(255,255,255,.25)'; g.fill(); // 남은 시간(숫자 대신 막대)
   if (k > 0.02) { rrect(W / 2 - bw / 2, u * 4.5, bw * k, u * 3.5, u * 1.7); g.fillStyle = '#ffd23f'; g.fill(); }
   text(`⭐ ${c.score}`, u * 4, u * 7, u * 8.5, '#ffd23f', 'left');
-  S.parts = S.parts.filter(p => (p.t += dt) < 0.5);
-  for (const p of S.parts) { g.globalAlpha = 1 - p.t / 0.5; g.fillStyle = p.color; g.beginPath(); g.arc(p.x + p.vx * p.t, p.y + p.vy * p.t, u * 1.1, 0, 7); g.fill(); }
+  drawParts(dt);
   S.pops = S.pops.filter(p => (p.t += dt) < 0.8);
   for (const p of S.pops) { g.globalAlpha = 1 - p.t / 0.8; text(p.str, p.x, p.y - p.t * u * 16, u * 7); }
   g.globalAlpha = 1;
 }
-function exitBtn() { // 터치 전용(놀이 중 손동작으로 눌리면 안 됨)
+function exitBtn() {
   const b = { x: W - u * 13, y: u * 2.5, w: u * 10, h: u * 9 };
   g.globalAlpha = 0.6; rrect(b.x, b.y, b.w, b.h, u * 2); g.fillStyle = 'rgba(0,0,0,.45)'; g.fill(); g.globalAlpha = 1;
   text('✕', b.x + b.w / 2, b.y + b.h / 2, u * 5);
@@ -166,17 +165,14 @@ function result(dt) {
   dim(0.6);
   const c = S.ctx, bounce = 1 + Math.abs(Math.sin(S.t * 4)) * 0.06;
   text('🎉👏🎉', W / 2, u * 14, u * 12 * bounce);
-  text(`⭐ ${c.score}`, W / 2, u * 40, u * 22);
+  text(`⭐ ${c.score}`, W / 2, u * 38, u * 20);
   if (Math.random() < 0.3) burst(Math.random() * W, Math.random() * H * 0.5, ['#ffd23f', '#ff9ad5', '#7fd8ff', '#7dff9b'][Math.floor(Math.random() * 4)]);
-  S.parts = S.parts.filter(p => (p.t += dt) < 0.5);
-  for (const p of S.parts) { g.globalAlpha = 1 - p.t / 0.5; g.fillStyle = p.color; g.beginPath(); g.arc(p.x + p.vx * p.t, p.y + p.vy * p.t, u * 1.1, 0, 7); g.fill(); }
-  g.globalAlpha = 1;
-  for (const p of players.list) drawSkeleton(g, p, 0.5);
-  if (S.t < 2.5) return; // 신나서 흔드는 손이 버튼을 바로 누르지 않게
-  runButtons([ // 버튼은 든 손이 닿는 높이(화면 위쪽 절반)에만 둔다
-    { id: 'again', x: W * 0.03, y: u * 28, w: W * 0.22, h: u * 26, label: '🔁', big: 1, on: () => startGame(S.game) },
-    { id: 'menu', x: W * 0.75, y: u * 28, w: W * 0.22, h: u * 26, label: '🏠', big: 1, on: () => go('menu') },
-  ], dt);
+  drawParts(dt);
+  if (S.t < 1) return;
+  buttons([
+    { x: W * 0.2, y: u * 58, w: W * 0.24, h: u * 32, label: '🔁', on: () => startGame(S.game) },
+    { x: W * 0.56, y: u * 58, w: W * 0.24, h: u * 32, label: '🏠', on: () => go('menu') },
+  ]);
 }
 
 // ── 메인 루프 ────────────────────────────────────────────────────────────
@@ -196,12 +192,15 @@ function loop(now) {
 requestAnimationFrame(loop);
 
 // ── 시작 ─────────────────────────────────────────────────────────────────
+// 홈 화면 아이콘으로 실행하면(주소창 없음) 안내 문구를 숨긴다
+if (navigator.standalone || matchMedia('(display-mode: standalone)').matches) $('homeTip')?.classList.add('hidden');
+
 async function boot() {
   const btn = $('startBtn'), status = $('status');
-  btn.disabled = true; unlockAudio(); loadVoice(); say('hello'); // iOS 는 탭 직후에 한 번 말해야 이후 음성이 풀린다
+  btn.disabled = true; unlockAudio(); loadVoice(); say('hello'); // iOS 는 탭 직후에 한 번 소리를 내야 이후 음성이 풀린다
   try {
     input = await createInput({ sim: q.has('sim'), bot: q.has('bot'), video: $('cam'), onStatus: s => { status.textContent = s; } });
-    loadAssets();
+    preload(GAMES.map(gm => 'icon_' + gm.id));
     try { await navigator.wakeLock?.request('screen'); } catch (e) {} // 화면 꺼짐 방지
     document.addEventListener('visibilitychange', () => { if (!document.hidden) navigator.wakeLock?.request('screen').catch(() => {}); });
     $('boot').classList.add('hidden');
@@ -210,7 +209,7 @@ async function boot() {
   } catch (e) {
     console.error(e); btn.disabled = false;
     status.textContent = e.name === 'NotAllowedError'
-      ? '카메라 권한이 거부되었습니다.\n설정 > Safari > 카메라를 "허용"으로 바꾼 뒤 새로고침하세요.'
+      ? '카메라 권한이 거부되었습니다.\n설정 > Safari > 카메라를 "허용"으로 바꾼 뒤 다시 여세요.'
       : '시작 실패: ' + (e.message || e);
   }
 }
