@@ -8,6 +8,8 @@ function mkPlayer(o = {}) {
   const knees = o.knees ?? [{ x: cx - 20, y: hy + 70 }, { x: cx + 20, y: hy + 70 }];
   const ankles = o.ankles ?? [{ x: cx - 20, y: hy + 130 }, { x: cx + 20, y: hy + 130 }];
   const lm = []; lm[11] = { x: cx - 30, y: sy + (o.tiltL ?? 0), v: 1 }; lm[12] = { x: cx + 30, y: sy + (o.tiltR ?? 0), v: 1 };
+  lm[0] = { x: cx, y: ny, v: 1 }; [lm[15], lm[16]] = hands.map(h => ({ v: 1, ...h })); [lm[13], lm[14]] = hands.map(h => ({ x: (h.x + cx) / 2, y: (h.y + sy) / 2, v: 1 }));
+  [lm[25], lm[26]] = knees.map(k => ({ v: 1, ...k })); [lm[27], lm[28]] = ankles.map(a => ({ v: 1, ...a }));
   return { present: o.present ?? true, i: o.i ?? 0, cx, sw: 60, torso: 100, nose: { x: cx, y: ny }, shoulder: { x: cx, y: sy }, hip: { x: cx, y: hy },
     hands: hands.map(h => ({ v: 1, ...h })), knees: knees.map(k => ({ v: 1, ...k })), ankles: ankles.map(a => ({ v: 1, ...a })), lm };
 }
@@ -16,7 +18,8 @@ function mkCtx() {
     present() { return c.players.filter(p => p.present); },
     touching(x, y, r, body) { for (const p of c.present()) { if (p.hands.some(h => Math.hypot(h.x - x, h.y - y) < r + p.sw * 0.25)) return p;
       if (body && [p.nose].some(o => Math.hypot(o.x - x, o.y - y) < r + p.sw * 0.5)) return p; } return null; },
-    add(n) { c.score += n; }, fx() {}, say(k) { c.said.push(k); }, sprite() {}, text() {}, hasImage: () => false,
+    add(n) { c.score += n; }, fx() {}, say(k) { c.said.push(k); }, sprite() {}, text() {}, hasImage: () => false, clipLen: () => null,
+    music: { start() { c.musicOn = true; }, stop() { c.musicOn = false; } },
     sfx: new Proxy({}, { get: () => () => {} }) };
   return c;
 }
@@ -49,4 +52,31 @@ await run('bird', [[4, {}]], (c, s) => ({ ok: s.y >= H * 0.85, msg: `still → s
   const b = s.ball; let kicked = false;
   for (let t = 0; t < 3; t += dt) { if (s.ball) c.players[0] = mkPlayer({ ankles: [{ x: b.x, y: b.y }, { x: 400, y: 380 }] }); game.update(s, dt, c); if (s.ball?.state === 'fly') kicked = true; }
   console.log(c.score === 1 && kicked && c.said.includes('goal') ? 'PASS' : 'FAIL', 'soccer   ', `kicked=${kicked} goals=${c.score} said=${c.said}`);
+}
+
+// 멈추기 놀이: 술래가 안 볼 때(또는 음악 나올 때) 춤추고, 볼 때 멈추면 별 +2. 움직이면 별 없음(벌도 없음)
+const dance = t => ({ hands: [{ x: 330 + Math.sin(t * 9) * 60, y: 160 + Math.cos(t * 9) * 60 }, { x: 510 - Math.sin(t * 9) * 60, y: 160 + Math.cos(t * 7) * 60 }] });
+const stand = () => ({ hands: [{ x: 370 + Math.random() * 2, y: 250 }, { x: 470 + Math.random() * 2, y: 250 }] }); // 아주 작은 떨림
+async function runFreeze(name, stopPhase, behave) {
+  const game = (await import(`../js/games/${name}.js`)).default, c = mkCtx(), s = game.start(c), dt = 1 / 30;
+  let t = 0, looks = 0, prev = '';
+  while (looks < 3 && t < 60) { const frozen = s.phase === stopPhase; c.players[0] = mkPlayer(frozen ? behave(t) : dance(t)); game.update(s, dt, c); t += dt;
+    if (s.phase !== prev && s.phase === stopPhase) looks++; prev = s.phase; }
+  return { c, s };
+}
+{
+  const { c, s } = await runFreeze('mugunghwa', 'look', stand);
+  console.log(c.score >= 4 && s.prog > 0.15 ? 'PASS' : 'FAIL', 'mugung   ', `freeze when looked at: stars=${c.score} (>=4) ant progress=${s.prog.toFixed(2)}`);
+}
+{
+  const { c } = await runFreeze('mugunghwa', 'look', dance);
+  console.log(c.score === 0 ? 'PASS' : 'FAIL', 'mugung   ', `keep moving when looked at: stars=${c.score} (expect 0, no penalty)`);
+}
+{
+  const { c } = await runFreeze('freeze', 'freeze', stand);
+  console.log(c.score >= 6 && c.said.includes('freeze_cue') ? 'PASS' : 'FAIL', 'freeze   ', `dance then freeze: stars=${c.score} cue=${c.said.includes('freeze_cue')}`);
+}
+{
+  const { c } = await runFreeze('freeze', 'freeze', dance);
+  console.log(!c.said.includes('freeze_good') ? 'PASS' : 'FAIL', 'freeze   ', `keep dancing on stop: praised=${c.said.includes('freeze_good')} (expect false)`);
 }

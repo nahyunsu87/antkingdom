@@ -1,6 +1,6 @@
 # 개미 체육관
 
-아이폰 Safari 카메라로 몸동작을 인식하는 유아용 운동 놀이 16종. 폰을 TV에 화면 미러링해서 아이 1~2명이 한다.
+아이폰 Safari 카메라로 몸동작을 인식하는 유아용 운동 놀이 18종. 폰을 TV에 화면 미러링해서 아이 1~2명이 한다.
 빌드 없음 — 정적 파일 그대로 GitHub Pages(HTTPS 필수: 카메라 권한)로 배포.
 주소창 없이 쓰려면 Safari "홈 화면에 추가"로 앱처럼 실행한다(`manifest.json`, `icons/`). 웹 페이지가 iPhone Safari 주소창을 직접 숨기는 방법은 없다.
 
@@ -8,7 +8,7 @@
 
 - **화면에 글자를 쓰지 않는다.** 안내는 음성(`say('키')`)과 그림·이모지로만. 숫자는 별 개수만.
 - **실패가 없다.** 감점, 틀렸다는 소리, 제한 시간 내 못 하면 사라지는 것, 승패·순위 비교 금지. 못 해도 조용히 다음으로.
-- 한 판 35~40초. 끝나면 무조건 칭찬.
+- **시간이 다 돼도 끝나지 않는다.** 한 바퀴(`duration`, 35~45초)마다 칭찬하고 그대로 이어서 논다. 끝내기는 어른이 ✕ → 칭찬 화면.
 - 둘이 하면 경쟁이 아니라 **별을 함께 모은다**(점수는 하나). 화면을 나누지 않고 누구든 무엇이든 건드릴 수 있다.
 - 가만히 서 있기·정확한 타이밍·1초 손 멈추기를 요구하지 않는다.
 - **버튼은 모두 터치 전용**(놀이 고르기, 다시 하기, ✕). 어른이 폰을 눌러 고른다. 손을 올려 누르는 버튼은 없다.
@@ -24,22 +24,22 @@ python3 -m http.server 8765
 - `http://localhost:8765/?sim` — 카메라 없이 가짜 뼈대로 실행. P1: A/D 이동, S 앉기, W 점프, Q/E 무릎, 마우스=오른손. P2: 방향키, `,` `.` 무릎
 - `?sim&bot` — 가짜 플레이어가 자동으로 움직임 (헤드리스 스크린샷 테스트용)
 - `&game=<놀이 id>` — 메뉴 건너뛰고 바로 시작(`&skip`: 준비 화면도 건너뜀). `&solo` — 가짜 플레이어 1명만
-- `node tests/motion.test.mjs` — 카메라 없이 동작 판정(박수·까꿍·만세·스쿼트·기울이기·퍼덕이기·발차기)을 가짜 자세로 검사. 판정 코드를 고치면 꼭 돌릴 것
+- `node tests/motion.test.mjs` — 카메라 없이 동작 판정(박수·까꿍·만세·스쿼트·기울이기·퍼덕이기·발차기·멈추기)을 가짜 자세로 검사. 판정 코드를 고치면 꼭 돌릴 것
 - 실제 인식 품질은 실기기에서만 확인 가능. sim 통과 ≠ 아이폰에서 잘 됨.
 
 ## 구조
 
 | 파일 | 역할 |
 |---|---|
-| `js/main.js` | 흐름(boot→menu→ready→count→play→result), 터치 버튼, 8×2 메뉴, 남은 시간 막대, 별 개수, 칭찬 화면 |
+| `js/main.js` | 흐름(boot→menu→ready→count→play⟲→result), 터치 버튼, 9×2 메뉴, 남은 시간 막대, 별 개수, 칭찬 화면 |
 | `js/input.js` | 카메라 + MediaPipe PoseLandmarker(최대 2명) / 시뮬레이터 |
 | `js/players.js` | 포즈→P1(왼쪽)/P2(오른쪽) 배정, 화면 좌표 변환, 떨림 보정, 파생값 |
-| `js/games/*.js` | 놀이별 로직. `index.js`에 등록하면 메뉴에 뜸. `util.js`는 공용 도구(trackStand, hint 등) |
+| `js/games/*.js` | 놀이별 로직. `index.js`에 등록하면 메뉴에 뜸. `util.js`는 공용 도구(trackStand, hint, 움직임 양 makeMotion/allStill 등) |
 | `js/assets.js` | `assets/<key>.png` 있으면 그림, 없으면 이모지. 처음 그릴 때 자동으로 불러옴(목록 관리 불필요). 단색 배경 자동 제거 |
 | `js/audio.js` | 합성 효과음 + 음성 안내. `assets/voice/<키>.mp3`(일레븐랩스) 있으면 그것, 없으면 내장 음성 |
 | `vendor/mediapipe/` | 포즈 라이브러리·모델 내장본(20MB). CDN 의존 없음. 수정 금지 |
 
-## 놀이 16종
+## 놀이 18종
 
 | id | 이름 | 하는 동작 | 판정 |
 |---|---|---|---|
@@ -52,6 +52,8 @@ python3 -m http.server 8765
 | peekaboo | 까꿍 | 얼굴 가리기 | 두 손이 코 근처 0.4초 → 떼면 까꿍 |
 | wipe | 창문 닦기 | 크게 문지르기 | 손 지나간 자리의 김이 지워짐 |
 | paint | 손으로 색칠 | 크게 휘두르기 | 손 지나간 자리가 칠해짐 |
+| mugunghwa | 무궁화 꽃이 피었습니다 | 움직였다 멈추기 | 구호 동안 움직이면 개미 전진, 술래가 보면 1.3초 가만히 → 별 +2 |
+| freeze | 그대로 멈춰라 | 춤추다 멈추기 | 음악 동안 춤춘 만큼 별, "그대로 멈춰라!" 후 1.4초 가만히 → 별 +2 |
 | catch | 별 받기 | 좌우 이동 | 몸·머리로 별에 닿음 |
 | copy | 따라 해봐 | 자세 5종 | 만세·웅크리기·비행기·한 발·별 |
 | frog | 개구리 점프 | 스쿼트 | 서 있을 때보다 머리가 몸통 0.35배 내려갔다 올라옴 |
@@ -65,7 +67,9 @@ python3 -m http.server 8765
 ```js
 export default {
   id, title, emoji, color,              // id 는 음성 키(시작 안내)와 아이콘 이름(icon_<id>)으로도 쓰임
-  duration: 35,                         // 초
+  duration: 35,                         // 초. 한 바퀴 길이(끝나면 칭찬하고 계속)
+  quietCheer: false,                    // true: 한 바퀴 칭찬 때 음성 없이 소리만(음성으로 진행하는 놀이)
+  stop(state, c) {},                    // 선택: 놀이를 떠날 때 정리. 음악은 엔진이 끈다
   start(c)  { return state; },
   update(state, dt, c) {},              // 아무도 안 보이면 엔진이 멈춰줌
   draw(state, g, c) {},                 // g = 2D context. 뼈대·별 개수·시간 막대는 엔진이 그림
@@ -74,7 +78,7 @@ export default {
 
 `c`: `W H u(=H/100)` `players[2]` `present()`(보이는 플레이어) `touching(x,y,r,body)`(닿은 플레이어 또는 null)
 `add(1,x,y,색)`(별 +1과 터지는 연출) `fx(x,y,색,개수,속도,수명)`(점수 없이 알갱이만) `score` `t` `dur`
-`sprite(key,이모지,x,y,크기)` `hasImage(key)` `say(키, force)` `sfx`(hit pop cheer note boing whoosh boom clap kick splash …) `text(...)`
+`sprite(key,이모지,x,y,크기)` `hasImage(key)` `say(키, force, 빠르기)` `clipLen(키)` `music.start()/stop()` `sfx`(hit pop cheer note boing whoosh boom clap kick splash …) `text(...)`
 
 `players[i]`: `present cx nose shoulder hip hands[2] knees[2] ankles[2] sw torso lm[33]`
 
@@ -88,7 +92,7 @@ export default {
 
 ## 다음 작업 후보 (실기기 테스트 후 우선순위 정할 것)
 
-1. 실기기 튜닝: 위 표의 판정 문턱값을 실제 아이 움직임으로 조정. 특히 까꿍(얼굴 가리면 인식이 흐려짐)·공 차기(발목이 화면에 안 잡힐 수 있음)
+1. 실기기 튜닝: 위 표의 판정 문턱값을 실제 아이 움직임으로 조정. 특히 까꿍(얼굴 가리면 인식이 흐려짐)·공 차기(발목이 화면에 안 잡힐 수 있음)·멈추기 놀이(`util.js` STILL/MOVING: 가만히 서 있을 때의 인식 떨림 크기가 실기기마다 다름)
 2. 그림 채우기(`assets/README.md`의 파일명 목록). 음성은 31개 모두 들어 있음
 3. 놀이별 연출: 배경 그림, 배경음악
 4. 오프라인 캐시(service worker) — 홈 화면 앱이 인터넷 없이도 열리게
