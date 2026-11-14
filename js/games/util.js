@@ -18,3 +18,23 @@ export function roundRect(g, x, y, w, h, r) {
   g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
   g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
 }
+
+// 온몸 움직임 양 측정(멈추기 놀이용). m.e[i] = 플레이어 i 의 움직임(초당 몸통 길이 단위, 부드럽게).
+// 대략: 가만히 서 있으면 0.1~0.3, 살살 흔들면 0.5~1, 신나게 춤추면 1.5 이상. (실기기에서 다시 맞출 것)
+const MOTION_JOINTS = [0, 13, 14, 15, 16, 25, 26, 27, 28]; // 코, 팔꿈치, 손목, 무릎, 발목
+export const STILL = 0.4, MOVING = 0.8;
+export const makeMotion = () => ({ prev: [null, null], e: [0, 0] });
+export function updateMotion(m, c, dt) {
+  c.players.forEach((p, i) => {
+    if (!p.present) { m.prev[i] = null; m.e[i] = 0; return; }
+    const pts = MOTION_JOINTS.map(j => p.lm[j]);
+    let d = 0, n = 0;
+    if (m.prev[i]) pts.forEach((q, k) => { if (q && (q.v ?? 1) > 0.4) { d += Math.hypot(q.x - m.prev[i][k].x, q.y - m.prev[i][k].y); n++; } });
+    const inst = n ? Math.min(6, d / n / p.torso / dt) : m.e[i];
+    m.e[i] += (inst - m.e[i]) * Math.min(1, dt * 5);
+    m.prev[i] = pts.map(q => ({ x: q?.x ?? 0, y: q?.y ?? 0 }));
+  });
+}
+// 보이는 사람 모두가 가만히 있나(둘이 하면 둘 다)
+export const allStill = (m, c) => c.present().every(p => m.e[p.i] < STILL);
+export const maxMotion = (m, c) => Math.max(0, ...c.present().map(p => m.e[p.i]));

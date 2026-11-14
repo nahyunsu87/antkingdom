@@ -74,6 +74,12 @@ export const VOICE = {
   frog_end: '개굴개굴! 연못에 도착했어요!',
   clean: '와, 반짝반짝 깨끗해졌어요!',
   paint_done: '우와, 멋진 그림이에요!',
+  mugunghwa: '술래가 안 볼 때 움직이고, 술래가 돌아보면 그대로 멈춰요!',
+  freeze: '음악이 나오면 신나게 춤추고, 음악이 멈추면 그대로 멈춰요!',
+  mugung: '무궁화 꽃이 피었습니다!',
+  mugung_end: '와! 꽃까지 왔어요!',
+  freeze_cue: '그대로 멈춰라!',
+  freeze_good: '잘 멈췄어요!',
   arrive: '도착! 한 번 더!',
   lost: '어디 갔지? 카메라 앞으로 와요!',
   done: '참 잘했어요! 정말 멋져요!',
@@ -87,7 +93,8 @@ export function loadVoice() { // unlockAudio() 이후에 호출
       .then(b => new Promise((ok, no) => ac.decodeAudioData(b, ok, no))).then(buf => { clips[key] = buf; }).catch(() => {});
   }
 }
-export function say(key, force = false) { // force: 방금 한 말이라도 다시 한다
+export const clipLen = key => clips[key]?.duration ?? null; // 녹음 파일 길이(초). 없으면 null
+export function say(key, force = false, rate = 1) { // force: 방금 한 말이라도 다시 한다. rate: 빠르기(소리 높이도 같이 변함)
   try {
     const now = performance.now();
     if (!force && key === lastSaid && now - lastAt < 2500) return; // 같은 말을 연달아 하지 않는다
@@ -96,10 +103,34 @@ export function say(key, force = false) { // force: 방금 한 말이라도 다�
     window.speechSynthesis?.cancel();
     if (clips[key] && ac) { // 미리 녹음된 파일. WebAudio 로 틀어야 iOS 에서 탭 없이도 재생된다
       const src = ac.createBufferSource(), gain = ac.createGain();
-      src.buffer = clips[key]; gain.gain.value = 1.0; src.connect(gain).connect(ac.destination); src.start(); playing = src;
+      src.buffer = clips[key]; src.playbackRate.value = rate; gain.gain.value = 1.0; src.connect(gain).connect(ac.destination); src.start(); playing = src;
     } else if (window.speechSynthesis && VOICE[key]) {
-      const m = new SpeechSynthesisUtterance(VOICE[key]); m.lang = 'ko-KR'; m.rate = 0.95; m.pitch = 1.25;
+      const m = new SpeechSynthesisUtterance(VOICE[key]); m.lang = 'ko-KR'; m.rate = 0.95 * rate; m.pitch = 1.25;
       speechSynthesis.speak(m);
     }
   } catch (e) {}
 }
+
+// ── 배경 음악(파일 없이 합성) ────────────────────────────────────────────
+// "그대로 멈춰라" 놀이에서 춤출 때 쓰는 짧은 반복 곡. 가락은 이 놀이를 위해 새로 만든 것.
+const MEL = [0, 2, 4, 2, 5, 4, 2, -1, 4, 5, 7, 5, 4, 2, 0, -1]; // 음계 번호, -1 = 쉼
+const BASS = [131, 175, 196, 131];
+let musicTimer = null;
+export const music = {
+  start(bpm = 124) {
+    if (!ac || musicTimer) return;
+    const step = 60 / bpm / 2; let i = 0, next = ac.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (next < ac.currentTime + 0.25) {
+        const k = i % 16, d = next - ac.currentTime;
+        if (k % 4 === 0) tone(110, 0.14, 'sine', 0.45, -60, d);   // 쿵
+        if (k % 2 === 1) noise(0.04, 0.12, 6000, d);               // 칙
+        if (MEL[k] >= 0) tone(NOTES[MEL[k] % 8], step * 0.9, 'square', 0.06, 0, d);
+        if (k % 4 === 0) tone(BASS[Math.floor(i / 4) % 4], step * 1.8, 'triangle', 0.2, 0, d);
+        next += step; i++;
+      }
+    }, 50);
+  },
+  stop() { clearInterval(musicTimer); musicTimer = null; },
+  get on() { return !!musicTimer; },
+};

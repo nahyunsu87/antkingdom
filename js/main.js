@@ -4,7 +4,7 @@
 // 버튼은 모두 터치 전용(어른이 누른다). 놀이 중 아이는 몸으로만 조작한다.
 import { createInput } from './input.js';
 import { Players, drawSkeleton } from './players.js';
-import { sfx, say, loadVoice, unlockAudio } from './audio.js';
+import { sfx, say, loadVoice, unlockAudio, clipLen, music } from './audio.js';
 import { preload, sprite, hasImage } from './assets.js';
 import { GAMES } from './games/index.js';
 
@@ -84,14 +84,16 @@ function buttons(btns) {
 }
 
 // ── 상태 전환 ────────────────────────────────────────────────────────────
-function go(name) { S.name = name; S.t = 0; S.hold = 0; S.lastSec = 0; if (name === 'menu') say('menu'); }
+function go(name) {
+  if (S.name === 'play' && name !== 'play') { S.game.stop?.(S.gs, S.ctx); music.stop(); }
+  S.name = name; S.t = 0; S.hold = 0; S.lastSec = 0; if (name === 'menu') say('menu'); }
 function startGame(game) { S.game = game; go('ready'); say(game.id, true); }
 function beginPlay() {
   const game = S.game;
-  S.pops = []; S.parts = []; S.lostT = 0;
+  S.pops = []; S.parts = []; S.lostT = 0; S.cheerT = 0;
   const c = S.ctx = {
     get W() { return W; }, get H() { return H; }, get u() { return u; },
-    players: players.list, present, touching, score: 0, t: 0, dur: game.duration, sfx, say, text, hasImage,
+    players: players.list, present, touching, score: 0, t: 0, dur: game.duration, sfx, say, text, hasImage, clipLen, music,
     sprite: (key, emoji, x, y, size) => sprite(g, key, emoji, x, y, size),
     add(n, x, y, color = '#ffd23f') { c.score += n; S.pops.push({ x, y, str: '⭐', t: 0 }); burst(x, y, color); },
     fx: burst, // 점수 없이 알갱이만
@@ -104,7 +106,7 @@ function beginPlay() {
 function menu() {
   dim(0.55);
   text('🐜', W / 2, u * 8, u * 10);
-  const cols = 8, rows = Math.ceil(GAMES.length / cols), gap = Math.min(W * 0.012, u * 2.2);
+  const rows = 2, cols = Math.ceil(GAMES.length / rows), gap = Math.min(W * 0.012, u * 2.2);
   const top = u * 17, cw = (W - gap * (cols + 1)) / cols, ch = Math.min((H - top - gap * (rows + 1)) / rows, cw * 1.25);
   const y0 = top + (H - top - (ch + gap) * rows - gap) / 2;
   const btns = GAMES.map((gm, i) => ({
@@ -146,7 +148,7 @@ function exitBtn() {
   const b = { x: W - u * 13, y: u * 2.5, w: u * 10, h: u * 9 };
   g.globalAlpha = 0.6; rrect(b.x, b.y, b.w, b.h, u * 2); g.fillStyle = 'rgba(0,0,0,.45)'; g.fill(); g.globalAlpha = 1;
   text('✕', b.x + b.w / 2, b.y + b.h / 2, u * 5);
-  if (S.tap && inside(S.tap, b)) go('menu');
+  if (S.tap && inside(S.tap, b)) { if (S.name === 'play') { go('result'); sfx.win(); say('done', true); } else go('menu'); }
 }
 function play(dt) {
   const c = S.ctx, game = S.game;
@@ -159,7 +161,13 @@ function play(dt) {
   hud(paused ? 0 : dt);
   exitBtn();
   if (paused) { dim(0.6); text('👀', W / 2, H / 2, u * 24); if (S.lostT - dt <= 2) say('lost'); }
-  if (S.name === 'play' && c.t >= c.dur) { go('result'); sfx.win(); say('done'); }
+  // 시간이 다 돼도 끝내지 않는다. 한 바퀴마다 칭찬하고 그대로 이어서 논다. 끝내기는 어른이 ✕ 를 누를 때만.
+  if (c.t >= c.dur) {
+    c.t = 0; S.cheerT = 2.2; sfx.win();
+    if (!game.quietCheer) say('done'); // 음성으로 진행하는 놀이(무궁화 등)는 말이 겹치지 않게 소리만
+    for (let i = 0; i < 4; i++) burst(W * (0.2 + 0.2 * i), H * 0.3, ['#ffd23f', '#ff9ad5', '#7fd8ff', '#7dff9b'][i], 16, 1.6, 0.9);
+  }
+  if (S.cheerT > 0) { S.cheerT -= dt; g.globalAlpha = Math.min(1, S.cheerT); text('🎉👏🎉', W / 2, u * 24, u * 14 * (1 + Math.abs(Math.sin(S.cheerT * 5)) * 0.08)); g.globalAlpha = 1; }
 }
 function result(dt) {
   dim(0.6);
